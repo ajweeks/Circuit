@@ -16,7 +16,7 @@ public class Grid implements Serializable {
 		
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
-				tiles[y][x] = new Tile(Type.BLANK);
+				tiles[y][x] = new Tile(TileType.BLANK);
 			}
 		}
 	}
@@ -41,6 +41,7 @@ public class Grid implements Serializable {
 			this.tiles[y][x].direction = Direction.NORTH;
 			break;
 		case NULL:
+			System.out.println("rotating null!");
 			break;
 		}
 	}

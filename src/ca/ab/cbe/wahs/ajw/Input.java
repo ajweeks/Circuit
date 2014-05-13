@@ -84,7 +84,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public void mouseDragged(MouseEvent e) {
 		x = e.getX();
 		y = e.getY();
-		leftDown = true;
+		//leftDown = true;
 	}
 	
 	public void keyReleased(KeyEvent e) {}

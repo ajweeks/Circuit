@@ -13,7 +13,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -69,8 +68,8 @@ public class Circuit extends JFrame {
 		help = new Button(695, 125, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Help");
 		
 		grid = new Grid(boardSize, boardSize);
-		selectionGrid = new Tile[] { new Tile(Type.BLANK), new Tile(Type.WIRE), new Tile(Type.INVERTER),
-				new Tile(Type.POWER) };
+		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE),
+				new Tile(TileType.INVERTER, Direction.NORTH), new Tile(TileType.POWER) };
 		selectedTile = 0;
 		
 		inverterN = new ImageIcon("res/inverterN.png").getImage();
@@ -212,8 +211,6 @@ public class Circuit extends JFrame {
 		
 		switch (tile.type) {
 		case WIRE:
-			System.out.println(x + " " + y);
-			System.out.println(Arrays.toString(tile.neighbours));
 			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
 			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
 			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize / 2, 5, tileSize / 2); //S
@@ -252,7 +249,7 @@ public class Circuit extends JFrame {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y][x].type == Type.POWER) {
+				if (grid.tiles[y][x].type == TileType.POWER) {
 					grid.tiles[y][x].powered = true;
 					continue;
 				}
@@ -263,21 +260,22 @@ public class Circuit extends JFrame {
 	}
 	
 	private boolean[] updateConnections(int x, int y) {
-		boolean[] result = new boolean[4];
+		boolean[] result = new boolean[] { false, false, false, false };
+		if (grid.tiles[y][x].direction == Direction.NULL || grid.tiles[y][x].type == TileType.BLANK) return result;
 		for (int j = Math.max(0, y - 1); j < Math.min(grid.height, y + 2); j++) {
 			for (int k = Math.max(0, x - 1); k < Math.min(grid.width, x + 2); k++) {
 				//in a 9x9 grid around the current tile (unless it's at the edge of the board)
 				if (y <= 0) result[0] = false;
-				else result[0] = grid.tiles[j][k].type != Type.BLANK; //Above 
+				else result[0] = grid.tiles[j][k].type != TileType.BLANK; //Above 
 				
 				if (x >= grid.width) result[1] = false;
-				else result[1] = grid.tiles[j][k].type != Type.BLANK; //Right
+				else result[1] = grid.tiles[j][k].type != TileType.BLANK; //Right
 				
 				if (y >= grid.height) result[2] = false;
-				else result[2] = grid.tiles[j][k].type != Type.BLANK; //Below
+				else result[2] = grid.tiles[j][k].type != TileType.BLANK; //Below
 				
 				if (x <= 0) result[3] = false;
-				else result[3] = grid.tiles[j][k].type != Type.BLANK; //Left 
+				else result[3] = grid.tiles[j][k].type != TileType.BLANK; //Left 
 				
 			}
 		}
@@ -285,7 +283,7 @@ public class Circuit extends JFrame {
 	}
 	
 	private boolean checkPowered(int xpos, int ypos) {
-		if (grid.tiles[ypos][xpos].type == Type.BLANK) return false;
+		if (grid.tiles[ypos][xpos].type == TileType.BLANK || grid.tiles[ypos][xpos].direction == Direction.NULL) return false;
 		
 		if (ypos >= 1 && grid.tiles[ypos - 1][xpos].powered) return true; //Above
 		if (xpos < grid.tiles.length - 1 && grid.tiles[ypos][xpos + 1].powered) return true; //Right
@@ -317,7 +315,7 @@ public class Circuit extends JFrame {
 				if (column == 0) { //Mouse is in leftmost column (tile selection area)
 					if (selectionGrid.length >= row + 1) selectedTile = row; //Check if the selected tile has a tile to select
 				} else { //Click in the game board
-					if (grid.tiles[column - 1][row].type.equals(Type.BLANK)
+					if (grid.tiles[column - 1][row].type.equals(TileType.BLANK)
 							|| !grid.tiles[column - 1][row].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
 						grid.tiles[column - 1][row] = selectionGrid[selectedTile];
 					} else { //Cycle through rotations
@@ -330,7 +328,7 @@ public class Circuit extends JFrame {
 					}
 				}
 			} else if (input.rightDown && column > 0) { //Right click clears the tile (except in the tile selection area)
-				grid.tiles[column - 1][row].type = Type.BLANK;
+				grid.tiles[column - 1][row].type = TileType.BLANK;
 				grid.tiles[column - 1][row].direction = Direction.NULL;
 				grid.tiles[column - 1][row].powered = false;
 			}
@@ -367,7 +365,7 @@ public class Circuit extends JFrame {
 				String message = "Circuit is an electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
 						+ "Left click to place/roatate objects on the grid.\r\n"
 						+ "Right click to clear a spot on the grid.\r\n"
-						+ "Use the number keys to quickly select different tile types.\r\n"
+						+ "Use the number keys to quickly select different tile TileTypes.\r\n"
 						+ "Hit esc to pause/unpause";
 				JOptionPane.showMessageDialog(this, message, "Circuit", JOptionPane.PLAIN_MESSAGE);
 			}
