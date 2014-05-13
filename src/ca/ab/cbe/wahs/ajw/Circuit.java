@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -22,6 +23,15 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Circuit extends JFrame {
 	private static final long serialVersionUID = 1L;
+	
+	public Font font;
+	
+	public final Dimension SIZE = new Dimension(780, 639);
+	
+	public int boardSize = 18; //Number of tiles wide and tall the board is
+	public int tileSize = 36; //Number of pixels per tile
+	public volatile boolean running = false;
+	public volatile boolean paused = false;
 	
 	private Button clearBoard;
 	private Button saveGame;
@@ -37,22 +47,14 @@ public class Circuit extends JFrame {
 	/** This tile is RECIEVING power from the West*/
 	private Image inverterW;
 	
-	public File curDir = new File("");
-	public Canvas canvas;
-	public Grid grid; //Main game board (width & height = boardSize)
-	public Tile[] selectionGrid;
-	public int selectedTile; //Index in selection grid of the current selected tile
-	public Colour colour;
-	public Input input;
-	public Font font;
-	public int hoverTileX, hoverTileY; //X and Y coordinates of the current tile under the mouse
-			
-	public final Dimension SIZE = new Dimension(780, 639);
-	
-	public int boardSize = 18; //Number of tiles wide and tall the board is
-	public int tileSize = 36; //Number of pixels per tile
-	public boolean running = false;
-	public boolean paused = false;
+	private File curDir = new File("");
+	private Canvas canvas;
+	private Tile[] selectionGrid;
+	private int selectedTile; //Index in selection grid of the current selected tile
+	private Colour colour;
+	private Input input;
+	private int hoverTileX, hoverTileY; //X and Y coordinates of the current tile under the mouse
+	private Grid grid; //Main game board (width & height = boardSize)
 	
 	public Circuit() {
 		super("Circuit");
@@ -67,8 +69,8 @@ public class Circuit extends JFrame {
 		help = new Button(695, 125, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Help");
 		
 		grid = new Grid(boardSize, boardSize);
-		selectionGrid = new Tile[] { new Tile(Tile.Type.BLANK), new Tile(Tile.Type.WIRE), new Tile(Tile.Type.INVERTER),
-				new Tile(Tile.Type.POWER) };
+		selectionGrid = new Tile[] { new Tile(Type.BLANK), new Tile(Type.WIRE), new Tile(Type.INVERTER),
+				new Tile(Type.POWER) };
 		selectedTile = 0;
 		
 		inverterN = new ImageIcon("res/inverterN.png").getImage();
@@ -187,8 +189,8 @@ public class Circuit extends JFrame {
 					(canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2), 250);
 		}
 		
-		buffer.show();
 		g.dispose();
+		buffer.show();
 	}
 	
 	private void renderButton(Button button, Graphics g) {
@@ -210,6 +212,8 @@ public class Circuit extends JFrame {
 		
 		switch (tile.type) {
 		case WIRE:
+			System.out.println(x + " " + y);
+			System.out.println(Arrays.toString(tile.neighbours));
 			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
 			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
 			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize / 2, 5, tileSize / 2); //S
@@ -221,13 +225,13 @@ public class Circuit extends JFrame {
 			}
 			break;
 		case INVERTER:
-			if (tile.direction == Tile.Direction.NORTH) {
+			if (tile.direction == Direction.NORTH) {
 				if (tile.powered) g.drawImage(inverterS, x, y - tileSize, null);
 				else g.drawImage(inverterN, x, y - tileSize, null);
-			} else if (tile.direction == Tile.Direction.EAST) {
+			} else if (tile.direction == Direction.EAST) {
 				if (tile.powered) g.drawImage(inverterW, x, y - tileSize, null);
 				else g.drawImage(inverterE, x, y - tileSize, null);
-			} else if (tile.direction == Tile.Direction.SOUTH) {
+			} else if (tile.direction == Direction.SOUTH) {
 				if (tile.powered) g.drawImage(inverterN, x, y - tileSize, null);
 				else g.drawImage(inverterS, x, y - tileSize, null);
 			} else {
@@ -248,27 +252,46 @@ public class Circuit extends JFrame {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y][x].type == Tile.Type.POWER) {
+				if (grid.tiles[y][x].type == Type.POWER) {
 					grid.tiles[y][x].powered = true;
 					continue;
 				}
 				grid.tiles[y][x].powered = checkPowered(x, y);
-				updateConnections();
-				
+				grid.tiles[y][x].neighbours = updateConnections(x, y);
 			}
 		}
 	}
 	
-	private void updateConnections() {
-		
+	private boolean[] updateConnections(int x, int y) {
+		boolean[] result = new boolean[4];
+		for (int j = Math.max(0, y - 1); j < Math.min(grid.height, y + 2); j++) {
+			for (int k = Math.max(0, x - 1); k < Math.min(grid.width, x + 2); k++) {
+				//in a 9x9 grid around the current tile (unless it's at the edge of the board)
+				if (y <= 0) result[0] = false;
+				else result[0] = grid.tiles[j][k].type != Type.BLANK; //Above 
+				
+				if (x >= grid.width) result[1] = false;
+				else result[1] = grid.tiles[j][k].type != Type.BLANK; //Right
+				
+				if (y >= grid.height) result[2] = false;
+				else result[2] = grid.tiles[j][k].type != Type.BLANK; //Below
+				
+				if (x <= 0) result[3] = false;
+				else result[3] = grid.tiles[j][k].type != Type.BLANK; //Left 
+				
+			}
+		}
+		return result;
 	}
 	
 	private boolean checkPowered(int xpos, int ypos) {
-		if (grid.tiles[Math.max(0, ypos - 1)][xpos].powered || grid.tiles[ypos][Math.max(0, xpos - 1)].powered
-				|| grid.tiles[ypos][Math.min(grid.tiles[ypos].length - 1, xpos + 1)].powered
-				|| grid.tiles[Math.min(0, ypos + 1)][xpos].powered) {
-			if (grid.tiles[ypos][xpos].type != Tile.Type.BLANK) return true;
-		}
+		if (grid.tiles[ypos][xpos].type == Type.BLANK) return false;
+		
+		if (ypos >= 1 && grid.tiles[ypos - 1][xpos].powered) return true; //Above
+		if (xpos < grid.tiles.length - 1 && grid.tiles[ypos][xpos + 1].powered) return true; //Right
+		if (ypos < grid.tiles.length - 1 && grid.tiles[ypos + 1][xpos].powered) return true; //Below
+		if (xpos >= 1 && grid.tiles[ypos][xpos - 1].powered) return true; //Left
+		
 		return false;
 	}
 	
@@ -294,21 +317,21 @@ public class Circuit extends JFrame {
 				if (column == 0) { //Mouse is in leftmost column (tile selection area)
 					if (selectionGrid.length >= row + 1) selectedTile = row; //Check if the selected tile has a tile to select
 				} else { //Click in the game board
-					if (grid.tiles[column - 1][row].type.equals(Tile.Type.BLANK)
+					if (grid.tiles[column - 1][row].type.equals(Type.BLANK)
 							|| !grid.tiles[column - 1][row].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
 						grid.tiles[column - 1][row] = selectionGrid[selectedTile];
 					} else { //Cycle through rotations
 						switch (grid.tiles[column - 1][row].type) {
 						case INVERTER:
-							grid.rotateCW(column, row);
+							grid.rotateCW(column - 1, row);
 						default:
 							break;
 						}
 					}
 				}
 			} else if (input.rightDown && column > 0) { //Right click clears the tile (except in the tile selection area)
-				grid.tiles[column - 1][row].type = Tile.Type.BLANK;
-				grid.tiles[column - 1][row].direction = Tile.Direction.NULL;
+				grid.tiles[column - 1][row].type = Type.BLANK;
+				grid.tiles[column - 1][row].direction = Direction.NULL;
 				grid.tiles[column - 1][row].powered = false;
 			}
 		}
@@ -317,7 +340,7 @@ public class Circuit extends JFrame {
 		if (clearBoard.mouseInBounds(input)) {
 			clearBoard.hover = true;
 			if (input.leftDown || input.rightDown) {
-				clearBoard();
+				grid = grid.clearBoard(grid, boardSize, boardSize);
 			}
 		} else clearBoard.hover = false;
 		
@@ -406,10 +429,6 @@ public class Circuit extends JFrame {
 				e.printStackTrace();
 			}
 		}
-	}
-	
-	private void clearBoard() {
-		grid = new Grid(boardSize, boardSize);
 	}
 	
 	/** @returns the row the mouse is in on the game grid */

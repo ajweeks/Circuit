@@ -2,14 +2,6 @@ package ca.ab.cbe.wahs.ajw;
 
 public class Tile {
 	
-	public enum Type {
-		BLANK, WIRE, INVERTER, POWER;
-	}
-	
-	public enum Direction {
-		NULL, NORTH, EAST, SOUTH, WEST;
-	}
-	
 	public Type type;
 	public Direction direction;
 	public boolean powered;
@@ -18,13 +10,6 @@ public class Tile {
 	
 	public Tile(Type type) {
 		this.type = type;
-		direction = Direction.NULL;
-		powered = false;
-		neighbours = new boolean[] { false, false, false, false };
-	}
-	
-	public Tile() {
-		type = Type.BLANK;
 		direction = Direction.NULL;
 		powered = false;
 		neighbours = new boolean[] { false, false, false, false };

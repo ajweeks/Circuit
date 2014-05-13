@@ -2,8 +2,6 @@ package ca.ab.cbe.wahs.ajw;
 
 import java.io.Serializable;
 
-import ca.ab.cbe.wahs.ajw.Tile.Direction;
-
 public class Grid implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -18,9 +16,13 @@ public class Grid implements Serializable {
 		
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
-				tiles[y][x] = new Tile();
+				tiles[y][x] = new Tile(Type.BLANK);
 			}
 		}
+	}
+	
+	public Grid clearBoard(Grid grid, int width, int height) {
+		return new Grid(width, height);
 	}
 	
 	/** Rotates the direction of the tile at grid[y][x] clockwise once */
