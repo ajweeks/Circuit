@@ -53,6 +53,7 @@ public class Circuit extends JFrame {
 	private Colour colour;
 	private Input input;
 	private int hoverTileX, hoverTileY; //X and Y coordinates of the current tile under the mouse
+	private Tile hoverTileType = new Tile(TileType.BLANK);
 	private Grid grid; //Main game board (width & height = boardSize)
 	
 	public Circuit() {
@@ -105,7 +106,7 @@ public class Circuit extends JFrame {
 			update();
 			render();
 			try {
-				Thread.sleep(1000 / 60); //30 updates / second (ish)
+				Thread.sleep(1000 / 60); //60 updates / second (ish)
 			} catch (InterruptedException io) {
 				io.printStackTrace();
 			}
@@ -135,12 +136,6 @@ public class Circuit extends JFrame {
 		g.setColor(colour.darkGray);
 		g.fillRect(tileSize, 0, tileSize * grid.width, tileSize * grid.height);
 		
-		//Hover tile background
-		if (hoverTileX != -1 && hoverTileY != -1) {
-			g.setColor(colour.hover);
-			g.fillRect(hoverTileX * tileSize, hoverTileY * tileSize, tileSize, tileSize);
-		}
-		
 		//Main game board grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width + 1; x++) {
@@ -149,10 +144,17 @@ public class Circuit extends JFrame {
 			}
 		}
 		
+		//Hover tile 
+		if (hoverTileX > 0 && hoverTileY > 0 && grid.tiles[hoverTileX - 1][hoverTileY].type == TileType.BLANK) {
+			renderTile(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, hoverTileType);
+			g.setColor(new Color(20, 20, 20, 100));
+			g.fillRect(hoverTileX * tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
+		}
+		
 		//Main game board tiles
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				renderTile(x * tileSize + tileSize, y * tileSize + tileSize, g, grid.tiles[y][x]);
+				renderTile(y * tileSize + tileSize, x * tileSize + tileSize, g, grid.tiles[y][x]);
 			}
 		}
 		
@@ -162,7 +164,7 @@ public class Circuit extends JFrame {
 		
 		//Render selection tiles
 		for (int y = 0; y < selectionGrid.length; y++) {
-			renderTile((y + 1) * tileSize, 0, g, selectionGrid[y]);
+			renderTile(0, (y + 1) * tileSize, g, selectionGrid[y]);
 		}
 		
 		//Render buttons
@@ -206,7 +208,7 @@ public class Circuit extends JFrame {
 	/** @param y - x position on screen
 	    @param x - y position on screen
 	     */
-	private void renderTile(int y, int x, Graphics g, Tile tile) {
+	private void renderTile(int x, int y, Graphics g, Tile tile) {
 		g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
 		
 		switch (tile.type) {
@@ -222,6 +224,7 @@ public class Circuit extends JFrame {
 			}
 			break;
 		case INVERTER:
+			System.out.println(tile.direction);
 			if (tile.direction == Direction.NORTH) {
 				if (tile.powered) g.drawImage(inverterS, x, y - tileSize, null);
 				else g.drawImage(inverterN, x, y - tileSize, null);
@@ -231,9 +234,12 @@ public class Circuit extends JFrame {
 			} else if (tile.direction == Direction.SOUTH) {
 				if (tile.powered) g.drawImage(inverterN, x, y - tileSize, null);
 				else g.drawImage(inverterS, x, y - tileSize, null);
-			} else {
+			} else if (tile.direction == Direction.WEST) {
 				if (tile.powered) g.drawImage(inverterE, x, y - tileSize, null);
 				else g.drawImage(inverterW, x, y - tileSize, null);
+			} else { //null probs
+				g.setColor(Color.RED);
+				g.fillRect(x + 1, y - tileSize + 1, tileSize - 1, tileSize - 1);
 			}
 			break;
 		case POWER:
@@ -264,19 +270,19 @@ public class Circuit extends JFrame {
 		if (grid.tiles[y][x].direction == Direction.NULL || grid.tiles[y][x].type == TileType.BLANK) return result;
 		for (int j = Math.max(0, y - 1); j < Math.min(grid.height, y + 2); j++) {
 			for (int k = Math.max(0, x - 1); k < Math.min(grid.width, x + 2); k++) {
+				//				System.out.println("x: " + j + " y: " + k + " " + Arrays.toString(grid.tiles[j][k].neighbours));
 				//in a 9x9 grid around the current tile (unless it's at the edge of the board)
-				if (y <= 0) result[0] = false;
-				else result[0] = grid.tiles[j][k].type != TileType.BLANK; //Above 
+				if (j <= 0) result[0] = false; //we're at the top of the grid
+				else result[0] = grid.tiles[j - 1][k].type != TileType.BLANK; //Above 
 				
-				if (x >= grid.width) result[1] = false;
-				else result[1] = grid.tiles[j][k].type != TileType.BLANK; //Right
+				if (k >= grid.width - 1) result[1] = false; //we're at the right side of the grid
+				else result[1] = grid.tiles[j][k + 1].type != TileType.BLANK; //Right
 				
-				if (y >= grid.height) result[2] = false;
-				else result[2] = grid.tiles[j][k].type != TileType.BLANK; //Below
+				if (j >= grid.height - 1) result[2] = false; //we're at the bottom of the grid
+				else result[2] = grid.tiles[j + 1][k].type != TileType.BLANK; //Below
 				
-				if (x <= 0) result[3] = false;
-				else result[3] = grid.tiles[j][k].type != TileType.BLANK; //Left 
-				
+				if (k <= 0) result[3] = false; //we're at the left side of the grid
+				else result[3] = grid.tiles[j][k - 1].type != TileType.BLANK; //Left 
 			}
 		}
 		return result;
@@ -285,12 +291,70 @@ public class Circuit extends JFrame {
 	private boolean checkPowered(int xpos, int ypos) {
 		if (grid.tiles[ypos][xpos].type == TileType.BLANK || grid.tiles[ypos][xpos].direction == Direction.NULL) return false;
 		
-		if (ypos >= 1 && grid.tiles[ypos - 1][xpos].powered) return true; //Above
-		if (xpos < grid.tiles.length - 1 && grid.tiles[ypos][xpos + 1].powered) return true; //Right
-		if (ypos < grid.tiles.length - 1 && grid.tiles[ypos + 1][xpos].powered) return true; //Below
-		if (xpos >= 1 && grid.tiles[ypos][xpos - 1].powered) return true; //Left
+		Tile above = getTileAt(xpos, ypos - 1);
+		Tile below = getTileAt(xpos, ypos + 1);
+		Tile right = getTileAt(xpos + 1, ypos);
+		Tile left = getTileAt(xpos - 1, ypos);
+		
+		if (above.type != TileType.NULL) { //Not at top edge of board
+			if (above.direction == Direction.NORTH || above.direction == Direction.SOUTH) {
+				if (above.powered) {
+					System.out.println("above");
+					if (above.type == TileType.INVERTER) { //Above is an inverter and powered and facing us
+						return false;
+					} else return true; //Above is not an inverter but is powered and is facing us
+				} else { //Not powered
+					if (above.type == TileType.INVERTER) return true; //Above is an inverter is facing us but is not powered
+				}
+			}
+		}
+		
+		if (below.type != TileType.NULL) { //Not at bottom edge of board
+			if (below.direction == Direction.NORTH || below.direction == Direction.SOUTH) {
+				if (below.powered) {
+					System.out.println("below");
+					if (below.type == TileType.INVERTER) { //below is an inverter and powered and facing us
+						return false;
+					} else return true; //below is not an inverter but is powered and is facing us
+				} else { //Not powered
+					if (below.type == TileType.INVERTER) return true; //below is an inverter is facing us but is not powered
+				}
+			}
+		}
+		
+		if (right.type != TileType.NULL) { //Not at right edge of board
+			if (right.direction == Direction.EAST || right.direction == Direction.WEST) {
+				if (right.powered) {
+					System.out.println("right");
+					if (right.type == TileType.INVERTER) { //right is an inverter and powered and facing us
+						return false;
+					} else return true; //right is not an inverter but is powered and is facing us
+				} else { //Not powered
+					if (right.type == TileType.INVERTER) return true; //right is an inverter is facing us but is not powered
+				}
+			}
+		}
+		
+		if (left.type != TileType.NULL) { //Not at left edge of board
+			if (left.direction == Direction.EAST || left.direction == Direction.WEST) {
+				System.out.println("left");
+				if (left.powered) {
+					if (left.type == TileType.INVERTER) { //left is an inverter and powered and facing us
+						return false;
+					} else return true; //left is not an inverter but is powered and is facing us
+				} else { //Not powered
+					if (left.type == TileType.INVERTER) return true; //left is an inverter is facing us but is not powered
+				}
+			}
+		}
 		
 		return false;
+	}
+	
+	private Tile getTileAt(int x, int y) {
+		if (x < 0 || x > grid.tiles.length || y < 0 || y > grid.tiles.length) return new Tile(TileType.NULL);
+		return grid.tiles[y][x];
+		
 	}
 	
 	private void pollInput() {
@@ -308,6 +372,7 @@ public class Circuit extends JFrame {
 		//Hover tile
 		hoverTileX = column;
 		hoverTileY = row;
+		hoverTileType = selectionGrid[selectedTile];
 		
 		if (row != -1 && column != -1) { //Mouse is in game board or tile selection area
 		
@@ -317,8 +382,12 @@ public class Circuit extends JFrame {
 				} else { //Click in the game board
 					if (grid.tiles[column - 1][row].type.equals(TileType.BLANK)
 							|| !grid.tiles[column - 1][row].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
-						grid.tiles[column - 1][row] = selectionGrid[selectedTile];
-					} else { //Cycle through rotations
+						grid.tiles[column - 1][row].direction = selectionGrid[selectedTile].direction;
+						grid.tiles[column - 1][row].neighbours = selectionGrid[selectedTile].neighbours;
+						grid.tiles[column - 1][row].powered = selectionGrid[selectedTile].powered;
+						grid.tiles[column - 1][row].type = selectionGrid[selectedTile].type;
+						
+					} else { //The selected tile is the same type as the tile being clicked, so rotate tile
 						switch (grid.tiles[column - 1][row].type) {
 						case INVERTER:
 							grid.rotateCW(column - 1, row);
@@ -331,6 +400,7 @@ public class Circuit extends JFrame {
 				grid.tiles[column - 1][row].type = TileType.BLANK;
 				grid.tiles[column - 1][row].direction = Direction.NULL;
 				grid.tiles[column - 1][row].powered = false;
+				grid.tiles[column - 1][row].neighbours = new boolean[] { false, false, false, false };
 			}
 		}
 		
@@ -362,7 +432,7 @@ public class Circuit extends JFrame {
 		if (help.mouseInBounds(input)) {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
-				String message = "Circuit is an electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
+				String message = "Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
 						+ "Left click to place/roatate objects on the grid.\r\n"
 						+ "Right click to clear a spot on the grid.\r\n"
 						+ "Use the number keys to quickly select different tile TileTypes.\r\n"

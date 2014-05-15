@@ -2,11 +2,11 @@ package ca.ab.cbe.wahs.ajw;
 
 public class Tile {
 	
+	/** index 0 = N, 1 = E, 2 = S, 3 = W */
+	public boolean[] neighbours;
 	public TileType type;
 	public Direction direction;
 	public boolean powered;
-	/** index 0 = N, 1 = E, 2 = S, 3 = W */
-	public boolean[] neighbours;
 	
 	public Tile(TileType type, Direction direction) {
 		this.type = type;
