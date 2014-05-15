@@ -227,6 +227,7 @@ public class Circuit extends JFrame {
 			System.out.println(tile.direction);
 			if (tile.direction == Direction.NORTH) {
 				if (tile.powered) g.drawImage(inverterS, x, y - tileSize, null);
+				
 				else g.drawImage(inverterN, x, y - tileSize, null);
 			} else if (tile.direction == Direction.EAST) {
 				if (tile.powered) g.drawImage(inverterW, x, y - tileSize, null);
