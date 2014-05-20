@@ -25,24 +25,23 @@ public class Grid implements Serializable {
 		return new Grid(width, height);
 	}
 	
-	/** Rotates the direction of the tile at grid[y][x] clockwise once */
-	public void rotateCW(int x, int y) {
+	/** @returns the direction of the tile at grid[y][x] rotated clockwise once */
+	public Direction rotateCW(int x, int y) {
 		switch (this.tiles[y][x].direction) {
 		case NORTH:
-			this.tiles[y][x].direction = Direction.EAST;
-			break;
+			return Direction.EAST;
 		case EAST:
-			this.tiles[y][x].direction = Direction.SOUTH;
-			break;
+			return Direction.SOUTH;
 		case SOUTH:
-			this.tiles[y][x].direction = Direction.WEST;
-			break;
+			return Direction.WEST;
 		case WEST:
-			this.tiles[y][x].direction = Direction.NORTH;
-			break;
+			return Direction.NORTH;
 		case NULL:
 			System.out.println("rotating null!");
-			break;
+			return Direction.NULL;
+		default:
+			System.out.println("invalid direction!");
+			return Direction.NULL;
 		}
 	}
 }

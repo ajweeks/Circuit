@@ -11,14 +11,14 @@ public class Tile {
 	public Tile(TileType type, Direction direction) {
 		this.type = type;
 		this.direction = direction;
-		powered = false;
+		powered = (type == TileType.POWER ? true : false);
 		neighbours = new boolean[] { false, false, false, false };
 	}
 	
 	public Tile(TileType type) {
 		this.type = type;
 		direction = Direction.NULL;
-		powered = false;
+		powered = (type == TileType.POWER ? true : false);
 		neighbours = new boolean[] { false, false, false, false };
 	}
 }

@@ -20,7 +20,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-public class Circuit extends JFrame {
+public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 	
 	public Font font;
@@ -95,9 +95,6 @@ public class Circuit extends JFrame {
 		setLocationRelativeTo(null);
 		setResizable(false);
 		setVisible(true);
-		
-		running = true;
-		loop();
 	}
 	
 	private void loop() {
@@ -145,7 +142,8 @@ public class Circuit extends JFrame {
 		}
 		
 		//Hover tile 
-		if (hoverTileX > 0 && hoverTileY > 0 && grid.tiles[hoverTileX - 1][hoverTileY].type == TileType.BLANK) {
+		if (hoverTileX > 0 && hoverTileX <= grid.tiles.length && hoverTileY >= 0 && hoverTileY <= grid.tiles.length
+				&& grid.tiles[hoverTileX - 1][hoverTileY].type == TileType.BLANK) {
 			renderTile(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, hoverTileType);
 			g.setColor(new Color(20, 20, 20, 100));
 			g.fillRect(hoverTileX * tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
@@ -215,7 +213,7 @@ public class Circuit extends JFrame {
 		case WIRE:
 			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
 			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
-			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize / 2, 5, tileSize / 2); //S
+			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
 			if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 4, 5); //W
 			
 			if (!tile.neighbours[0] && !tile.neighbours[1] && !tile.neighbours[2] && !tile.neighbours[3]) { //There are no neighbours
@@ -224,10 +222,9 @@ public class Circuit extends JFrame {
 			}
 			break;
 		case INVERTER:
-			System.out.println(tile.direction);
+			//System.out.println(x + " " + y + " \t\t" + tile.direction);
 			if (tile.direction == Direction.NORTH) {
 				if (tile.powered) g.drawImage(inverterS, x, y - tileSize, null);
-				
 				else g.drawImage(inverterN, x, y - tileSize, null);
 			} else if (tile.direction == Direction.EAST) {
 				if (tile.powered) g.drawImage(inverterW, x, y - tileSize, null);
@@ -256,37 +253,36 @@ public class Circuit extends JFrame {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y][x].type == TileType.POWER) {
-					grid.tiles[y][x].powered = true;
+				if (grid.tiles[y][x].type == TileType.BLANK || grid.tiles[y][x].type == TileType.POWER) {
 					continue;
 				}
 				grid.tiles[y][x].powered = checkPowered(x, y);
-				grid.tiles[y][x].neighbours = updateConnections(x, y);
+				grid.tiles[y][x].neighbours = updateConnections(x - 1, y - 1);
 			}
 		}
 	}
 	
 	private boolean[] updateConnections(int x, int y) {
-		boolean[] result = new boolean[] { false, false, false, false };
-		if (grid.tiles[y][x].direction == Direction.NULL || grid.tiles[y][x].type == TileType.BLANK) return result;
+		boolean[] newNeighbors = new boolean[] { false, false, false, false };
+		if (grid.tiles[y][x].type == TileType.BLANK) return newNeighbors;
 		for (int j = Math.max(0, y - 1); j < Math.min(grid.height, y + 2); j++) {
 			for (int k = Math.max(0, x - 1); k < Math.min(grid.width, x + 2); k++) {
-				//				System.out.println("x: " + j + " y: " + k + " " + Arrays.toString(grid.tiles[j][k].neighbours));
+				//System.out.println("x: " + j + " y: " + k + " " + Arrays.toString(grid.tiles[j][k].neighbours));
 				//in a 9x9 grid around the current tile (unless it's at the edge of the board)
-				if (j <= 0) result[0] = false; //we're at the top of the grid
-				else result[0] = grid.tiles[j - 1][k].type != TileType.BLANK; //Above 
+				if (j <= 0) newNeighbors[0] = false; //we're at the top of the grid
+				else newNeighbors[0] = grid.tiles[j - 1][k].type != TileType.BLANK; //Above 
 				
-				if (k >= grid.width - 1) result[1] = false; //we're at the right side of the grid
-				else result[1] = grid.tiles[j][k + 1].type != TileType.BLANK; //Right
+				if (k >= grid.width - 1) newNeighbors[1] = false; //we're at the right side of the grid
+				else newNeighbors[1] = grid.tiles[j][k + 1].type != TileType.BLANK; //Right
 				
-				if (j >= grid.height - 1) result[2] = false; //we're at the bottom of the grid
-				else result[2] = grid.tiles[j + 1][k].type != TileType.BLANK; //Below
+				if (j >= grid.height - 1) newNeighbors[2] = false; //we're at the bottom of the grid
+				else newNeighbors[2] = grid.tiles[j + 1][k].type != TileType.BLANK; //Below
 				
-				if (k <= 0) result[3] = false; //we're at the left side of the grid
-				else result[3] = grid.tiles[j][k - 1].type != TileType.BLANK; //Left 
+				if (k <= 0) newNeighbors[3] = false; //we're at the left side of the grid
+				else newNeighbors[3] = grid.tiles[j][k - 1].type != TileType.BLANK; //Left 
 			}
 		}
-		return result;
+		return newNeighbors;
 	}
 	
 	private boolean checkPowered(int xpos, int ypos) {
@@ -306,6 +302,7 @@ public class Circuit extends JFrame {
 					} else return true; //Above is not an inverter but is powered and is facing us
 				} else { //Not powered
 					if (above.type == TileType.INVERTER) return true; //Above is an inverter is facing us but is not powered
+					else return false;
 				}
 			}
 		}
@@ -319,6 +316,7 @@ public class Circuit extends JFrame {
 					} else return true; //below is not an inverter but is powered and is facing us
 				} else { //Not powered
 					if (below.type == TileType.INVERTER) return true; //below is an inverter is facing us but is not powered
+					else return false;
 				}
 			}
 		}
@@ -332,6 +330,7 @@ public class Circuit extends JFrame {
 					} else return true; //right is not an inverter but is powered and is facing us
 				} else { //Not powered
 					if (right.type == TileType.INVERTER) return true; //right is an inverter is facing us but is not powered
+					else return false;
 				}
 			}
 		}
@@ -345,6 +344,7 @@ public class Circuit extends JFrame {
 					} else return true; //left is not an inverter but is powered and is facing us
 				} else { //Not powered
 					if (left.type == TileType.INVERTER) return true; //left is an inverter is facing us but is not powered
+					else return false;
 				}
 			}
 		}
@@ -353,9 +353,9 @@ public class Circuit extends JFrame {
 	}
 	
 	private Tile getTileAt(int x, int y) {
-		if (x < 0 || x > grid.tiles.length || y < 0 || y > grid.tiles.length) return new Tile(TileType.NULL);
+		if (x < 0 || x >= grid.tiles.length || y < 0 || y >= grid.tiles.length) return new Tile(TileType.NULL);
+		System.out.println(x + " " + y);
 		return grid.tiles[y][x];
-		
 	}
 	
 	private void pollInput() {
@@ -367,44 +367,17 @@ public class Circuit extends JFrame {
 		
 		if (input.num != -1 && input.num < selectionGrid.length) selectedTile = input.num;
 		
-		int row = getMouseRow(input.y);
 		int column = getMouseColumn(input.x);
+		int row = getMouseRow(input.y);
 		
-		//Hover tile
-		hoverTileX = column;
+		// 0 = tile selection area, 18 = rightmost column
 		hoverTileY = row;
+		hoverTileX = column;
 		hoverTileType = selectionGrid[selectedTile];
 		
-		if (row != -1 && column != -1) { //Mouse is in game board or tile selection area
-		
-			if (input.leftDown) { //Left click in game board or tile selection area
-				if (column == 0) { //Mouse is in leftmost column (tile selection area)
-					if (selectionGrid.length >= row + 1) selectedTile = row; //Check if the selected tile has a tile to select
-				} else { //Click in the game board
-					if (grid.tiles[column - 1][row].type.equals(TileType.BLANK)
-							|| !grid.tiles[column - 1][row].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
-						grid.tiles[column - 1][row].direction = selectionGrid[selectedTile].direction;
-						grid.tiles[column - 1][row].neighbours = selectionGrid[selectedTile].neighbours;
-						grid.tiles[column - 1][row].powered = selectionGrid[selectedTile].powered;
-						grid.tiles[column - 1][row].type = selectionGrid[selectedTile].type;
-						
-					} else { //The selected tile is the same type as the tile being clicked, so rotate tile
-						switch (grid.tiles[column - 1][row].type) {
-						case INVERTER:
-							grid.rotateCW(column - 1, row);
-						default:
-							break;
-						}
-					}
-				}
-			} else if (input.rightDown && column > 0) { //Right click clears the tile (except in the tile selection area)
-				grid.tiles[column - 1][row].type = TileType.BLANK;
-				grid.tiles[column - 1][row].direction = Direction.NULL;
-				grid.tiles[column - 1][row].powered = false;
-				grid.tiles[column - 1][row].neighbours = new boolean[] { false, false, false, false };
-			}
+		if (row != -1 && column != -1) { //Mouse is not in game board or tile selection area
+			updateGrid(column, row);
 		}
-		
 		//Clear Screen Button
 		if (clearBoard.mouseInBounds(input)) {
 			clearBoard.hover = true;
@@ -443,6 +416,35 @@ public class Circuit extends JFrame {
 		} else help.hover = false;
 		
 		input.releaseAll();
+	}
+	
+	private void updateGrid(int column, int row) {
+		if (input.leftDown) { //Left click in game board or tile selection area
+			if (column == 0) { //Mouse is in leftmost column (tile selection area)
+				if (selectionGrid.length >= row + 1) selectedTile = row; //Check if the selected tile has a tile to select
+			} else { //Click in the game board
+				column--; //Offset to account for tile selection column
+				if (grid.tiles[column][row].type.equals(TileType.BLANK)
+						|| !grid.tiles[column][row].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
+					grid.tiles[column][row].direction = selectionGrid[selectedTile].direction;
+					grid.tiles[column][row].neighbours = selectionGrid[selectedTile].neighbours.clone();
+					grid.tiles[column][row].powered = selectionGrid[selectedTile].powered;
+					grid.tiles[column][row].type = selectionGrid[selectedTile].type;
+				} else { //The selected tile is the same type as the tile being clicked, so rotate tile
+					switch (grid.tiles[column][row].type) {
+					case INVERTER:
+						grid.tiles[column][row].direction = grid.rotateCW(column, row);
+					default:
+						break;
+					}
+				}
+			}
+		} else if (input.rightDown && column > 0) { //Right click clears the tile (except in the tile selection area)
+			grid.tiles[column][row].type = TileType.BLANK;
+			grid.tiles[column][row].direction = Direction.NULL;
+			grid.tiles[column][row].powered = false;
+			grid.tiles[column][row].neighbours = new boolean[] { false, false, false, false };
+		}
 	}
 	
 	//--------------Helper methods------------------------
@@ -500,18 +502,26 @@ public class Circuit extends JFrame {
 		}
 	}
 	
-	/** @returns the row the mouse is in on the game grid */
+	/** @param y - the y position of the mouse on screen 
+	 *  @returns the row the mouse is in on the game grid */
 	public int getMouseRow(int y) {
-		return Math.min((y - 1) / tileSize, boardSize - 1);
+		return Math.max(0, Math.min((y - 1) / tileSize, boardSize - 1));
 	}
 	
-	/** @returns the column the mouse is in on the game grid OR -1 if mouse is outside of game grid */
+	/** @param x - the x position of the mouse on screen 
+	 *  @returns the column the mouse is in on the game grid OR -1 if mouse is outside of game grid */
 	public int getMouseColumn(int x) {
 		if (x > boardSize * tileSize + tileSize) return -1;
 		return Math.min((x - 1) / tileSize, boardSize);
 	}
 	
 	public static void main(String[] args) {
-		new Circuit();
+		new Thread(new Circuit()).start();
+	}
+	
+	@Override
+	public void run() {
+		running = true;
+		loop();
 	}
 }
