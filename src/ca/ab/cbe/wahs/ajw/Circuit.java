@@ -139,7 +139,7 @@ public class Circuit extends JFrame implements Runnable {
 		
 		//Hover tile 
 		if (hoverTileX > 0 && hoverTileX <= grid.tiles.length && hoverTileY >= 0 && hoverTileY <= grid.tiles.length
-				&& grid.tiles[hoverTileY * hoverTileX].type == TileType.BLANK) {
+				&& grid.tiles[hoverTileY * grid.width + hoverTileX - 1].type == TileType.BLANK) {
 			renderTile(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, hoverTileType);
 			g.setColor(new Color(20, 20, 20, 100));
 			g.fillRect(hoverTileX * tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
