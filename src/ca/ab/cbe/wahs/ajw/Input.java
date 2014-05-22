@@ -1,5 +1,6 @@
 package ca.ab.cbe.wahs.ajw;
 
+import java.awt.Canvas;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -9,10 +10,16 @@ import java.awt.event.MouseMotionListener;
 public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	
 	public int x, y; //X and Y coordinates of the user's mouse on screen
-	public boolean leftDown; //Whether or not the user's left mouse button is down
-	public boolean rightDown; //Whether or not the user's right mouse button is down
+	public boolean leftDown = false; //Whether or not the user's left mouse button is down
+	public boolean rightDown = false; //Whether or not the user's right mouse button is down
 	public boolean escape = false; //Whether or not the user is hitting the esc button
-	public int num = -1;
+	public int num = -1; //Current selected tile
+	
+	public Input(Canvas canvas) {
+		canvas.addMouseListener(this);
+		canvas.addMouseMotionListener(this);
+		canvas.addKeyListener(this);
+	}
 	
 	public void releaseAll() {
 		leftDown = false;
@@ -84,7 +91,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public void mouseDragged(MouseEvent e) {
 		x = e.getX();
 		y = e.getY();
-		//leftDown = true;
+		//leftDown = true; //Uncomment for fun times
 	}
 	
 	public void keyReleased(KeyEvent e) {}

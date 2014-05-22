@@ -24,7 +24,6 @@ public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 	
 	public Font font;
-	
 	public final Dimension SIZE = new Dimension(780, 639);
 	
 	public int boardSize = 18; //Number of tiles wide and tall the board is
@@ -60,7 +59,6 @@ public class Circuit extends JFrame implements Runnable {
 		super("Circuit");
 		
 		colour = new Colour();
-		input = new Input();
 		font = new Font("Arial", Font.BOLD, 36);
 		
 		clearBoard = new Button(695, 35, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Clear Board");
@@ -79,19 +77,17 @@ public class Circuit extends JFrame implements Runnable {
 		inverterW = new ImageIcon("res/inverterW.png").getImage();
 		
 		canvas = new Canvas();
+		input = new Input(canvas);
 		canvas.setMinimumSize(SIZE);
 		canvas.setMaximumSize(SIZE);
 		canvas.setPreferredSize(SIZE);
-		canvas.addMouseListener(input);
-		canvas.addMouseMotionListener(input);
-		canvas.addKeyListener(input);
 		canvas.setFont(font);
 		canvas.setFocusable(true);
 		canvas.requestFocus();
 		
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		add(canvas);
 		pack();
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
 		setResizable(false);
 		setVisible(true);
@@ -257,7 +253,7 @@ public class Circuit extends JFrame implements Runnable {
 					continue;
 				}
 				grid.tiles[y][x].powered = checkPowered(x, y);
-				grid.tiles[y][x].neighbours = updateConnections(x - 1, y - 1);
+				grid.tiles[y][x].neighbours = updateConnections(x, y);
 			}
 		}
 	}
