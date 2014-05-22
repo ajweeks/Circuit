@@ -67,8 +67,8 @@ public class Circuit extends JFrame implements Runnable {
 		help = new Button(695, 125, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Help");
 		
 		grid = new Grid(boardSize, boardSize);
-		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE),
-				new Tile(TileType.INVERTER, Direction.NORTH), new Tile(TileType.POWER) };
+		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE), new Tile(TileType.INVERTER, Direction.NORTH),
+				new Tile(TileType.POWER) };
 		selectedTile = 0;
 		
 		inverterN = new ImageIcon("res/inverterN.png").getImage();
@@ -168,7 +168,7 @@ public class Circuit extends JFrame implements Runnable {
 		renderButton(help, g);
 		
 		if (!canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
-		
+			
 		if (paused) {
 			//Render translucent gray over entire screen
 			g.setColor(new Color(65, 75, 75, 160));
@@ -176,12 +176,10 @@ public class Circuit extends JFrame implements Runnable {
 			
 			g.setFont(font.deriveFont(32f));
 			g.setColor(Color.white);
-			g.drawString("PAUSED", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("PAUSED") / 2),
-					200);
+			g.drawString("PAUSED", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("PAUSED") / 2), 200);
 			
 			g.setFont(font.deriveFont(20f));
-			g.drawString("(esc to unpause)",
-					(canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2), 250);
+			g.drawString("(esc to unpause)", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2), 250);
 		}
 		
 		g.dispose();
@@ -211,14 +209,13 @@ public class Circuit extends JFrame implements Runnable {
 			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
 			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
 			if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 4, 5); //W
-			
+				
 			if (!tile.neighbours[0] && !tile.neighbours[1] && !tile.neighbours[2] && !tile.neighbours[3]) { //There are no neighbours
 				g.fillRect(x + (tileSize / 2) - 1, (int) (y - (tileSize * 0.7)), 5, tileSize / 2); //V
 				g.fillRect((int) (x + tileSize * 0.3), y - (tileSize / 2) - 1, tileSize / 2, 5); //H
 			}
 			break;
 		case INVERTER:
-			//System.out.println(x + " " + y + " \t\t" + tile.direction);
 			if (tile.direction == Direction.NORTH) {
 				if (tile.powered) g.drawImage(inverterS, x, y - tileSize, null);
 				else g.drawImage(inverterN, x, y - tileSize, null);
@@ -250,7 +247,7 @@ public class Circuit extends JFrame implements Runnable {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
 				if (grid.tiles[y * grid.width + x].type == TileType.BLANK) continue; //No need updating blank tiles
-				
+					
 				grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
 			}
@@ -263,7 +260,6 @@ public class Circuit extends JFrame implements Runnable {
 		
 		for (int j = Math.max(0, y - 1); j < Math.min(grid.height, y + 2); j++) {
 			for (int k = Math.max(0, x - 1); k < Math.min(grid.width, x + 2); k++) {
-				//System.out.println("x: " + j + " y: " + k + " " + Arrays.toString(grid.tiles[j][k].neighbours));
 				//in a 9x9 grid around the current tile (unless it's at the edge of the board)
 				if (j <= 0) newNeighbors[0] = false; //we're at the top of the grid
 				else newNeighbors[0] = grid.tiles[j * grid.width + k].type != TileType.BLANK; //Above 
@@ -282,8 +278,8 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private boolean checkPowered(int xpos, int ypos) {
-		if (grid.tiles[ypos * grid.width + xpos].type == TileType.BLANK
-				|| grid.tiles[ypos * grid.width + xpos].direction == Direction.NULL) return false;
+		if (grid.tiles[ypos * grid.width + xpos].type == TileType.BLANK || grid.tiles[ypos * grid.width + xpos].direction == Direction.NULL)
+			return false;
 		
 		Tile above = getTileAt(xpos, ypos - 1);
 		Tile below = getTileAt(xpos, ypos + 1);
@@ -293,7 +289,6 @@ public class Circuit extends JFrame implements Runnable {
 		if (above.type != TileType.NULL) { //Not at top edge of board
 			if (above.direction == Direction.NORTH || above.direction == Direction.SOUTH) {
 				if (above.powered) {
-					System.out.println("above");
 					if (above.type == TileType.INVERTER) { //Above is an inverter and powered and facing us
 						return false;
 					} else return true; //Above is not an inverter but is powered and is facing us
@@ -307,7 +302,6 @@ public class Circuit extends JFrame implements Runnable {
 		if (below.type != TileType.NULL) { //Not at bottom edge of board
 			if (below.direction == Direction.NORTH || below.direction == Direction.SOUTH) {
 				if (below.powered) {
-					System.out.println("below");
 					if (below.type == TileType.INVERTER) { //below is an inverter and powered and facing us
 						return false;
 					} else return true; //below is not an inverter but is powered and is facing us
@@ -321,7 +315,6 @@ public class Circuit extends JFrame implements Runnable {
 		if (right.type != TileType.NULL) { //Not at right edge of board
 			if (right.direction == Direction.EAST || right.direction == Direction.WEST) {
 				if (right.powered) {
-					System.out.println("right");
 					if (right.type == TileType.INVERTER) { //right is an inverter and powered and facing us
 						return false;
 					} else return true; //right is not an inverter but is powered and is facing us
@@ -334,7 +327,6 @@ public class Circuit extends JFrame implements Runnable {
 		
 		if (left.type != TileType.NULL) { //Not at left edge of board
 			if (left.direction == Direction.EAST || left.direction == Direction.WEST) {
-				System.out.println("left");
 				if (left.powered) {
 					if (left.type == TileType.INVERTER) { //left is an inverter and powered and facing us
 						return false;
@@ -351,7 +343,6 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private Tile getTileAt(int x, int y) {
 		if (x < 0 || x >= grid.tiles.length || y < 0 || y >= grid.tiles.length) return new Tile(TileType.NULL);
-		System.out.println(x + " " + y);
 		return grid.tiles[y * grid.width + x];
 	}
 	
@@ -404,10 +395,8 @@ public class Circuit extends JFrame implements Runnable {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
 				String message = "Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
-						+ "Left click to place/roatate objects on the grid.\r\n"
-						+ "Right click to clear a spot on the grid.\r\n"
-						+ "Use the number keys to quickly select different tile TileTypes.\r\n"
-						+ "Hit esc to pause/unpause";
+						+ "Left click to place/roatate objects on the grid.\r\n" + "Right click to clear a spot on the grid.\r\n"
+						+ "Use the number keys to quickly select different tile TileTypes.\r\n" + "Hit esc to pause/unpause";
 				JOptionPane.showMessageDialog(this, message, "Circuit", JOptionPane.PLAIN_MESSAGE);
 			}
 		} else help.hover = false;
@@ -458,8 +447,7 @@ public class Circuit extends JFrame implements Runnable {
 			
 			try {
 				save.createNewFile();
-				ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(chooser.getSelectedFile()
-						.getName()));
+				ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(chooser.getSelectedFile().getName()));
 				out.writeObject(grid);
 				out.close();
 			} catch (IOException e) {
