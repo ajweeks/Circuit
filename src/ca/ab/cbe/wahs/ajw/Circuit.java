@@ -139,7 +139,7 @@ public class Circuit extends JFrame implements Runnable {
 		
 		//Hover tile 
 		if (hoverTileX > 0 && hoverTileX <= grid.tiles.length && hoverTileY >= 0 && hoverTileY <= grid.tiles.length
-				&& grid.tiles[hoverTileX - 1][hoverTileY].type == TileType.BLANK) {
+				&& grid.tiles[hoverTileY * hoverTileX].type == TileType.BLANK) {
 			renderTile(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, hoverTileType);
 			g.setColor(new Color(20, 20, 20, 100));
 			g.fillRect(hoverTileX * tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
@@ -148,7 +148,7 @@ public class Circuit extends JFrame implements Runnable {
 		//Main game board tiles
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				renderTile(y * tileSize + tileSize, x * tileSize + tileSize, g, grid.tiles[y][x]);
+				renderTile(x * tileSize + tileSize, y * tileSize + tileSize, g, grid.tiles[y * grid.width + x]);
 			}
 		}
 		
@@ -249,40 +249,41 @@ public class Circuit extends JFrame implements Runnable {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y][x].type == TileType.BLANK || grid.tiles[y][x].type == TileType.POWER) {
-					continue;
-				}
-				grid.tiles[y][x].powered = checkPowered(x, y);
-				grid.tiles[y][x].neighbours = updateConnections(x, y);
+				if (grid.tiles[y * grid.width + x].type == TileType.BLANK) continue; //No need updating blank tiles
+				
+				grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
+				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
 			}
 		}
 	}
 	
 	private boolean[] updateConnections(int x, int y) {
 		boolean[] newNeighbors = new boolean[] { false, false, false, false };
-		if (grid.tiles[y][x].type == TileType.BLANK) return newNeighbors;
+		if (grid.tiles[y * grid.width + x].type == TileType.BLANK) return newNeighbors;
+		
 		for (int j = Math.max(0, y - 1); j < Math.min(grid.height, y + 2); j++) {
 			for (int k = Math.max(0, x - 1); k < Math.min(grid.width, x + 2); k++) {
 				//System.out.println("x: " + j + " y: " + k + " " + Arrays.toString(grid.tiles[j][k].neighbours));
 				//in a 9x9 grid around the current tile (unless it's at the edge of the board)
 				if (j <= 0) newNeighbors[0] = false; //we're at the top of the grid
-				else newNeighbors[0] = grid.tiles[j - 1][k].type != TileType.BLANK; //Above 
+				else newNeighbors[0] = grid.tiles[j * grid.width + k].type != TileType.BLANK; //Above 
 				
 				if (k >= grid.width - 1) newNeighbors[1] = false; //we're at the right side of the grid
-				else newNeighbors[1] = grid.tiles[j][k + 1].type != TileType.BLANK; //Right
+				else newNeighbors[1] = grid.tiles[j * grid.width + k].type != TileType.BLANK; //Right
 				
 				if (j >= grid.height - 1) newNeighbors[2] = false; //we're at the bottom of the grid
-				else newNeighbors[2] = grid.tiles[j + 1][k].type != TileType.BLANK; //Below
+				else newNeighbors[2] = grid.tiles[j * grid.width + k].type != TileType.BLANK; //Below
 				
 				if (k <= 0) newNeighbors[3] = false; //we're at the left side of the grid
-				else newNeighbors[3] = grid.tiles[j][k - 1].type != TileType.BLANK; //Left 
+				else newNeighbors[3] = grid.tiles[j * grid.width + k].type != TileType.BLANK; //Left 
 			}
 		}
 		return newNeighbors;
 	}
 	
 	private boolean checkPowered(int xpos, int ypos) {
-		if (grid.tiles[ypos][xpos].type == TileType.BLANK || grid.tiles[ypos][xpos].direction == Direction.NULL) return false;
+		if (grid.tiles[ypos * grid.width + xpos].type == TileType.BLANK
+				|| grid.tiles[ypos * grid.width + xpos].direction == Direction.NULL) return false;
 		
 		Tile above = getTileAt(xpos, ypos - 1);
 		Tile below = getTileAt(xpos, ypos + 1);
@@ -351,7 +352,7 @@ public class Circuit extends JFrame implements Runnable {
 	private Tile getTileAt(int x, int y) {
 		if (x < 0 || x >= grid.tiles.length || y < 0 || y >= grid.tiles.length) return new Tile(TileType.NULL);
 		System.out.println(x + " " + y);
-		return grid.tiles[y][x];
+		return grid.tiles[y * grid.width + x];
 	}
 	
 	private void pollInput() {
@@ -363,16 +364,16 @@ public class Circuit extends JFrame implements Runnable {
 		
 		if (input.num != -1 && input.num < selectionGrid.length) selectedTile = input.num;
 		
-		int column = getMouseColumn(input.x);
-		int row = getMouseRow(input.y);
+		int x = getMouseColumn(input.x);
+		int y = getMouseRow(input.y);
 		
 		// 0 = tile selection area, 18 = rightmost column
-		hoverTileY = row;
-		hoverTileX = column;
+		hoverTileY = y;
+		hoverTileX = x;
 		hoverTileType = selectionGrid[selectedTile];
 		
-		if (row != -1 && column != -1) { //Mouse is not in game board or tile selection area
-			updateGrid(column, row);
+		if (y != -1 && x != -1) { //Mouse is not in game board or tile selection area
+			updateGrid(x, y);
 		}
 		//Clear Screen Button
 		if (clearBoard.mouseInBounds(input)) {
@@ -414,32 +415,28 @@ public class Circuit extends JFrame implements Runnable {
 		input.releaseAll();
 	}
 	
-	private void updateGrid(int column, int row) {
+	/** @param x - the x coordinate of the tile currently under the mouse
+	 *  @param y - the y coordinate of the tile currently under the mouse  */
+	private void updateGrid(int x, int y) {
+		x--; //Offset to account for tile selection column
 		if (input.leftDown) { //Left click in game board or tile selection area
-			if (column == 0) { //Mouse is in leftmost column (tile selection area)
-				if (selectionGrid.length >= row + 1) selectedTile = row; //Check if the selected tile has a tile to select
+			if (x == -1) { //Mouse is in leftmost column (tile selection area)
+				if (y + 1 <= selectionGrid.length) selectedTile = y; //Check if the selected tile has a tile to select
 			} else { //Click in the game board
-				column--; //Offset to account for tile selection column
-				if (grid.tiles[column][row].type.equals(TileType.BLANK)
-						|| !grid.tiles[column][row].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
-					grid.tiles[column][row].direction = selectionGrid[selectedTile].direction;
-					grid.tiles[column][row].neighbours = selectionGrid[selectedTile].neighbours.clone();
-					grid.tiles[column][row].powered = selectionGrid[selectedTile].powered;
-					grid.tiles[column][row].type = selectionGrid[selectedTile].type;
+				if (grid.tiles[y * grid.width + x].type.equals(TileType.BLANK)
+						|| !grid.tiles[y * grid.width + x].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
+					grid.tiles[y * grid.width + x] = selectionGrid[selectedTile].copy();
 				} else { //The selected tile is the same type as the tile being clicked, so rotate tile
-					switch (grid.tiles[column][row].type) {
+					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
-						grid.tiles[column][row].direction = grid.rotateCW(column, row);
+						grid.tiles[y * grid.width + x].direction = grid.rotateCW(x, y);
 					default:
 						break;
 					}
 				}
 			}
-		} else if (input.rightDown && column > 0) { //Right click clears the tile (except in the tile selection area)
-			grid.tiles[column][row].type = TileType.BLANK;
-			grid.tiles[column][row].direction = Direction.NULL;
-			grid.tiles[column][row].powered = false;
-			grid.tiles[column][row].neighbours = new boolean[] { false, false, false, false };
+		} else if (input.rightDown && x > 0 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
+			grid.tiles[y * grid.width + x] = Tile.newBlankTile();
 		}
 	}
 	

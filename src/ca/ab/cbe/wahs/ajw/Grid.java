@@ -5,19 +5,17 @@ import java.io.Serializable;
 public class Grid implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
-	public Tile[][] tiles;
+	public Tile[] tiles;
 	public int height, width;
 	
 	public Grid(int width, int height) {
 		this.height = height;
 		this.width = width;
 		
-		tiles = new Tile[height][width];
+		tiles = new Tile[width * height];
 		
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				tiles[y][x] = new Tile(TileType.BLANK);
-			}
+		for (int i = 0; i < height * width; i++) {
+			tiles[i] = new Tile(TileType.BLANK);
 		}
 	}
 	
@@ -27,7 +25,7 @@ public class Grid implements Serializable {
 	
 	/** @returns the direction of the tile at grid[y][x] rotated clockwise once */
 	public Direction rotateCW(int x, int y) {
-		switch (this.tiles[y][x].direction) {
+		switch (this.tiles[y * width + x].direction) {
 		case NORTH:
 			return Direction.EAST;
 		case EAST:

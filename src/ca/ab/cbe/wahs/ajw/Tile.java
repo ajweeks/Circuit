@@ -8,6 +8,13 @@ public class Tile {
 	public Direction direction;
 	public boolean powered;
 	
+	public Tile(TileType type, Direction direction, boolean[] neighbors, boolean powered) {
+		this.type = type;
+		this.direction = direction;
+		this.powered = powered;
+		this.neighbours = neighbors;
+	}
+	
 	public Tile(TileType type, Direction direction) {
 		this.type = type;
 		this.direction = direction;
@@ -20,5 +27,13 @@ public class Tile {
 		direction = Direction.NULL;
 		powered = (type == TileType.POWER ? true : false);
 		neighbours = new boolean[] { false, false, false, false };
+	}
+	
+	public static Tile newBlankTile() {
+		return new Tile(TileType.BLANK, Direction.NULL);
+	}
+	
+	public Tile copy() {
+		return new Tile(this.type, this.direction, this.neighbours, this.powered);
 	}
 }
