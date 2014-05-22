@@ -25,7 +25,7 @@ public class Grid implements Serializable {
 	
 	/** @returns the direction of the tile at grid[y][x] rotated clockwise once */
 	public Direction rotateCW(int x, int y) {
-		switch (this.tiles[y * width + x].direction) {
+		switch (this.tiles[y * this.width + x].direction) {
 		case NORTH:
 			return Direction.EAST;
 		case EAST:

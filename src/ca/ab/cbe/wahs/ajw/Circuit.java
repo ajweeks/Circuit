@@ -423,10 +423,9 @@ public class Circuit extends JFrame implements Runnable {
 			if (x == -1) { //Mouse is in leftmost column (tile selection area)
 				if (y + 1 <= selectionGrid.length) selectedTile = y; //Check if the selected tile has a tile to select
 			} else { //Click in the game board
-				if (grid.tiles[y * grid.width + x].type.equals(TileType.BLANK)
-						|| !grid.tiles[y * grid.width + x].equals(selectionGrid[selectedTile])) { //If the tile is blank, or a different tile...
+				if (grid.tiles[y * grid.width + x].type != selectionGrid[selectedTile].type) { //If the tile not the selected tile
 					grid.tiles[y * grid.width + x] = selectionGrid[selectedTile].copy();
-				} else { //The selected tile is the same type as the tile being clicked, so rotate tile
+				} else { //The selected tile is the same type as the tile being clicked, so rotate it
 					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
 						grid.tiles[y * grid.width + x].direction = grid.rotateCW(x, y);
