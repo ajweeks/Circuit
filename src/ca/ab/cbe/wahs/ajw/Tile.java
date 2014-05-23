@@ -24,16 +24,16 @@ public class Tile {
 	
 	public Tile(TileType type) {
 		this.type = type;
-		direction = Direction.NULL;
+		direction = Direction.NONE;
 		powered = (type == TileType.POWER ? true : false);
 		neighbours = new boolean[] { false, false, false, false };
 	}
 	
 	public static Tile newBlankTile() {
-		return new Tile(TileType.BLANK, Direction.NULL);
+		return new Tile(TileType.BLANK, Direction.NONE);
 	}
 	
-	public Tile copy() {
-		return new Tile(this.type, this.direction, this.neighbours, this.powered);
+	public static Tile copy(Tile tile) {
+		return new Tile(tile.type, tile.direction, tile.neighbours, tile.powered);
 	}
 }

@@ -23,6 +23,19 @@ public class Grid implements Serializable {
 		return new Grid(width, height);
 	}
 	
+	public Direction rotateInverterCW(int x, int y) {
+		switch (this.tiles[y * this.width + x].direction) {
+		case NORTH:
+			return Direction.EAST;
+		case EAST:
+			return Direction.NORTH;
+		default:
+			System.err.println("Invalid inverter direction! x: " + x + " y: " + y);
+			return Direction.NONE;
+		}
+		
+	}
+	
 	/** @returns the direction of the tile at grid[y][x] rotated clockwise once */
 	public Direction rotateCW(int x, int y) {
 		switch (this.tiles[y * this.width + x].direction) {
@@ -34,12 +47,9 @@ public class Grid implements Serializable {
 			return Direction.WEST;
 		case WEST:
 			return Direction.NORTH;
-		case NULL:
-			System.out.println("rotating null!");
-			return Direction.NULL;
 		default:
 			System.out.println("invalid direction!");
-			return Direction.NULL;
+			return Direction.NONE;
 		}
 	}
 }

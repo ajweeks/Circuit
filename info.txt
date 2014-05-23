@@ -1,0 +1,15 @@
+--Tiles--
+-have a type which is a TileType enum
+-have a direction; 
+   -inverter: NORTH, EAST, SOUTH, WEST
+   -wire: NONE
+   -power: NONE
+   -blank: NONE
+-have an alive boolean storing whether or not it is being powered
+-have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness)
+
+--TO DO LIST--
+-Update entire grid before rendering, to eliminate slow moving "electricity" from bottom right corner to top left corner
+-Fix lingering power which does not go away after the removal of a power source
+-Implement a burn out system to prevent endless loops of cpu-melting atrocities
+-Fix wire auto-connection issues

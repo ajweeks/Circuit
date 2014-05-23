@@ -1,5 +1,5 @@
 package ca.ab.cbe.wahs.ajw;
 
 public enum TileType {
-	BLANK, WIRE, INVERTER, POWER, NULL;
+	NULL, BLANK, WIRE, INVERTER, POWER;
 }
