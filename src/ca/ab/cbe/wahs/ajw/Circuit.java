@@ -231,7 +231,12 @@ public class Circuit extends JFrame implements Runnable {
 			break;
 		case POWER:
 			g.setColor(colour.lightRed);
-			g.fillOval(x + (tileSize / 2) - 7, y - (tileSize / 2) - 6, (tileSize / 3), (tileSize / 3));
+			g.fillOval(x + (tileSize / 2) - 5, y - (tileSize / 2) - 6, (tileSize / 3), (tileSize / 3));
+			
+			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
+			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
+			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
+			if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 4, 5); //W
 			break;
 		default:
 			break;
@@ -401,7 +406,7 @@ public class Circuit extends JFrame implements Runnable {
 					}
 				}
 			}
-		} else if (input.rightDown && x > 0 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
+		} else if (input.rightDown && x >= 0 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
 			grid.tiles[y * grid.width + x] = Tile.newBlankTile();
 		}
 	}
