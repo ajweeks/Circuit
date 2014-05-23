@@ -361,6 +361,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (y != -1 && x != -1) { //Mouse is not in game board or tile selection area
 			updateGrid(x, y);
 		}
+		
 		//Clear Screen Button
 		if (clearBoard.mouseInBounds(input)) {
 			clearBoard.hover = true;

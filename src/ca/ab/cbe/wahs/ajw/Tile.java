@@ -30,7 +30,7 @@ public class Tile {
 	}
 	
 	public static Tile newBlankTile() {
-		return new Tile(TileType.BLANK, Direction.NONE);
+		return new Tile(TileType.BLANK);
 	}
 	
 	public static Tile copy(Tile tile) {

@@ -9,7 +9,9 @@
 -have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness)
 
 --TO DO LIST--
+!!-Fix lingering power which does not go away after the removal of a power source
 -Update entire grid before rendering, to eliminate slow moving "electricity" from bottom right corner to top left corner
--Fix lingering power which does not go away after the removal of a power source
 -Implement a burn out system to prevent endless loops of cpu-melting atrocities
+
+--COMPLETED ITEMS--
 -Fix wire auto-connection issues
