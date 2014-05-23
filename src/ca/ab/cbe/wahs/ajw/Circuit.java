@@ -264,18 +264,33 @@ public class Circuit extends JFrame implements Runnable {
 		Tile right = getTileAt(x + 1, y);
 		Tile left = getTileAt(x - 1, y);
 		
-		//in a 9x9 grid around the current tile (unless it's at the edge of the board)
 		if (above.type == TileType.NULL) newNeighbors[0] = false; //type is null if current tile is at the top of the grid
-		else newNeighbors[0] = above.type != TileType.BLANK; //Above 
+		else {
+			if (above.type == TileType.BLANK) newNeighbors[0] = false; //Above
+			else if (above.type == TileType.INVERTER) newNeighbors[0] = (above.direction == Direction.NORTH);
+			else newNeighbors[0] = true;
+		}
 		
 		if (right.type == TileType.NULL) newNeighbors[1] = false; //type is null if current tile is at the right side of the grid
-		else newNeighbors[1] = right.type != TileType.BLANK; //Right
+		else {
+			if (right.type == TileType.BLANK) newNeighbors[1] = false; //Right
+			else if (right.type == TileType.INVERTER) newNeighbors[1] = (right.direction == Direction.EAST);
+			else newNeighbors[1] = true;
+		}
 		
 		if (below.type == TileType.NULL) newNeighbors[2] = false; //type is null if current tile is at the bottom of the grid
-		else newNeighbors[2] = below.type != TileType.BLANK; //Below
+		else {
+			if (below.type == TileType.BLANK) newNeighbors[2] = false; //Below
+			else if (below.type == TileType.INVERTER) newNeighbors[2] = (below.direction == Direction.NORTH);
+			else newNeighbors[2] = true;
+		}
 		
 		if (left.type == TileType.NULL) newNeighbors[3] = false; //type is null if current tile is at the right side of the grid
-		else newNeighbors[3] = left.type != TileType.BLANK; //Left
+		else {
+			if (left.type == TileType.BLANK) newNeighbors[3] = false; //Left
+			else if (left.type == TileType.INVERTER) newNeighbors[3] = (left.direction == Direction.EAST);
+			else newNeighbors[3] = true;
+		}
 		
 		return newNeighbors;
 	}
@@ -350,7 +365,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (clearBoard.mouseInBounds(input)) {
 			clearBoard.hover = true;
 			if (input.leftDown || input.rightDown) {
-				grid = grid.clearBoard(grid, boardSize, boardSize);
+				grid = clearBoard(grid, boardSize, boardSize);
 			}
 		} else clearBoard.hover = false;
 		
@@ -400,7 +415,7 @@ public class Circuit extends JFrame implements Runnable {
 				} else { //The selected tile is the same type as the tile being clicked, so rotate it
 					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
-						grid.tiles[y * grid.width + x].direction = grid.rotateInverterCW(x, y);
+						grid.tiles[y * grid.width + x].direction = rotateInverterCW(grid, x, y);
 					default:
 						break;
 					}
@@ -413,6 +428,42 @@ public class Circuit extends JFrame implements Runnable {
 	
 	//--------------Helper methods------------------------
 	
+	/** @returns new blank board */
+	public static Grid clearBoard(Grid grid, int width, int height) {
+		return new Grid(width, height);
+	}
+	
+	/** @returns EAST if direction is NORTH, or NORTH if direction is EAST */
+	public static Direction rotateInverterCW(Grid grid, int x, int y) {
+		switch (grid.tiles[y * grid.width + x].direction) {
+		case NORTH:
+			return Direction.EAST;
+		case EAST:
+			return Direction.NORTH;
+		default:
+			System.err.println("Invalid inverter direction! x: " + x + " y: " + y);
+			return Direction.NONE;
+		}
+		
+	}
+	
+	/** @returns the direction of the tile at grid[y][x] rotated clockwise once */
+	public static Direction rotateCW(Grid grid, int x, int y) {
+		switch (grid.tiles[y * grid.width + x].direction) {
+		case NORTH:
+			return Direction.EAST;
+		case EAST:
+			return Direction.SOUTH;
+		case SOUTH:
+			return Direction.WEST;
+		case WEST:
+			return Direction.NORTH;
+		default:
+			System.out.println("invalid direction!");
+			return Direction.NONE;
+		}
+	}
+	
 	/** Overwrites the existing saveBoard file */
 	private void saveBoard() {
 		JFileChooser chooser = new JFileChooser();
@@ -423,8 +474,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
 		chooser.setSelectedFile(new File("save.ser"));
-		int returnVal = chooser.showSaveDialog(this);
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
+		if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
 			File save = new File(chooser.getSelectedFile().getName());
 			if (save.exists()) save.delete();
 			
@@ -450,8 +500,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		chooser.setMultiSelectionEnabled(false);
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
-		int returnVal = chooser.showOpenDialog(this);
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
+		if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
 			try {
 				FileInputStream fileInput = new FileInputStream(chooser.getSelectedFile().getName());
 				ObjectInputStream in = new ObjectInputStream(fileInput);
