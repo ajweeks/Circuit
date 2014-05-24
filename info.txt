@@ -1,20 +1,22 @@
 --Tiles--
--have a type which is a TileType enum
--have a direction; 
+-have a type which is a field from TileType.java enum
+-have a direction (stored in the form of a Direction.java enum field); 
    -inverter: NORTH, EAST, SOUTH, WEST
    -wire: NONE
    -power: NONE
    -blank: NONE
 -have an alive boolean storing whether or not it is being powered
--have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness)
+-have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness), in the order of: { north, east, south, west };
 
 --TO DO LIST--
 !!-Fix lingering power which does not go away after the removal of a power source
      -Maybe by "following" the power through each wire instead of just checking if neighbors are powered
      -Make inverters have four directions, and only allow current to pass through one direction
+!!-Fix saving / loading the board 
 -Update entire grid before rendering, to eliminate slow moving "electricity" from bottom right corner to top left corner
 -Implement a burn out system to prevent endless loops of cpu-melting atrocities
 -Get rid of extra inverter sprites, instead use code to rotate them
+-Fix white box rendering when a save or load window is opened right away
 
 --COMPLETED ITEMS--
 -Fix wire auto-connection issues

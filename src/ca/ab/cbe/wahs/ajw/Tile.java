@@ -1,6 +1,9 @@
 package ca.ab.cbe.wahs.ajw;
 
-public class Tile {
+import java.io.Serializable;
+
+public class Tile implements Serializable {
+	private static final long serialVersionUID = 2L;
 	
 	/** index 0 = N, 1 = E, 2 = S, 3 = W */
 	public boolean[] neighbours;

@@ -277,23 +277,26 @@ public class Circuit extends JFrame implements Runnable {
 		Tile right = getTileAt(x + 1, y);
 		Tile left = getTileAt(x - 1, y);
 		
-		if (connecting(above, Direction.SOUTH)) newNeighbors[0] = true;
-		if (connecting(right, Direction.WEST)) newNeighbors[1] = true;
-		if (connecting(below, Direction.NORTH)) newNeighbors[2] = true;
-		if (connecting(left, Direction.EAST)) newNeighbors[3] = true;
+		if (connecting(curTile, above, Direction.SOUTH)) newNeighbors[0] = true;
+		if (connecting(curTile, right, Direction.WEST)) newNeighbors[1] = true;
+		if (connecting(curTile, below, Direction.NORTH)) newNeighbors[2] = true;
+		if (connecting(curTile, left, Direction.EAST)) newNeighbors[3] = true;
 		
 		return newNeighbors;
 	}
 	
 	/** @param tile - the tile which you are checking
-	 *  @param direction - the direction towards the current tile */
-	private boolean connecting(Tile tile, Direction direction) {
+	 *  @param direction - the direction towards the current tile
+	 *  @return */
+	private boolean connecting(Tile curTile, Tile tile, Direction direction) {
 		switch (tile.type) {
 		case INVERTER:
-			if (tile.direction == direction || tile.direction == direction.opposite()) return true; //pointing the correct way
+			if (curTile.type == TileType.POWER) {
+				if (tile.direction == direction.opposite()) return true; //You can't feed an inverter into a power tile
+			} else if (tile.direction == direction || tile.direction == direction.opposite()) return true;
 			else return false;
 		case POWER:
-			return true;
+			return curTile.type != TileType.POWER; //power tiles don't connect to other power tiles
 		case WIRE:
 			return true;
 		case NULL:
@@ -354,7 +357,8 @@ public class Circuit extends JFrame implements Runnable {
 		return false;
 	}
 	
-	/** @param tile - the tile which you are checking
+	/** @return Whether <b>tile</b> is giving power towards <b>direction</b> 
+	 * @param tile - the tile which you are checking
 	 *  @param direction - the direction towards the current tile (only affects inverters) */
 	private boolean givingPower(Tile tile, Direction direction) {
 		switch (tile.type) {
@@ -373,7 +377,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
-	/** @returns the tile with x and y coordinates, or a Tile with type NULL if x or y are out of range */
+	/** @return the tile with x and y coordinates, or a Tile with type NULL if x or y are out of range */
 	private Tile getTileAt(int x, int y) {
 		if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) return new Tile(TileType.NULL);
 		return grid.tiles[y * grid.width + x];
@@ -404,7 +408,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (clearBoard.mouseInBounds(input)) {
 			clearBoard.hover = true;
 			if (input.leftDown || input.rightDown) {
-				grid = clearBoard(grid, boardSize, boardSize);
+				grid = clearBoard(boardSize, boardSize);
 			}
 		} else clearBoard.hover = false;
 		
@@ -465,12 +469,12 @@ public class Circuit extends JFrame implements Runnable {
 	
 	//--------------Helper methods------------------------
 	
-	/** @returns new blank board */
-	public static Grid clearBoard(Grid grid, int width, int height) {
+	/** @return New blank board */
+	public static Grid clearBoard(int width, int height) {
 		return new Grid(width, height);
 	}
 	
-	/** @returns the direction of the tile at grid[y][x] rotated clockwise once */
+	/** @return The direction of the tile at <b>grid[y][x]</b> rotated clockwise once */
 	public static Direction rotateCW(Grid grid, int x, int y) {
 		switch (grid.tiles[y * grid.width + x].direction) {
 		case NORTH:
@@ -497,9 +501,16 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
 		chooser.setSelectedFile(new File("save.ser"));
-		if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+		if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
 			File save = new File(chooser.getSelectedFile().getName());
-			if (save.exists()) save.delete();
+			if (save.exists()) {
+				int i = 0;
+				if ((i = JOptionPane.showConfirmDialog(null,
+						chooser.getSelectedFile().getName() + " already exists! Would you like to overwrite it?", "File exists",
+						JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
+					save.delete();
+				} else if (i == JOptionPane.NO_OPTION) return;
+			}
 			
 			try {
 				save.createNewFile();
@@ -522,7 +533,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		chooser.setMultiSelectionEnabled(false);
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
-		if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+		if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 			try {
 				FileInputStream fileInput = new FileInputStream(chooser.getSelectedFile().getName());
 				ObjectInputStream in = new ObjectInputStream(fileInput);
@@ -538,13 +549,13 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	/** @param y - the y position of the mouse on screen 
-	 *  @returns the row the mouse is in on the game grid */
+	 *  @return the row the mouse is in on the game grid */
 	public int getMouseRow(int y) {
 		return Math.max(0, Math.min((y - 1) / tileSize, boardSize - 1));
 	}
 	
 	/** @param x - the x position of the mouse on screen 
-	 *  @returns the column the mouse is in on the game grid OR -1 if mouse is outside of game grid */
+	 *  @return the column the mouse is in on the game grid OR -1 if mouse is outside of game grid */
 	public int getMouseColumn(int x) {
 		if (x > boardSize * tileSize + tileSize) return -1;
 		return Math.min((x - 1) / tileSize, boardSize);
