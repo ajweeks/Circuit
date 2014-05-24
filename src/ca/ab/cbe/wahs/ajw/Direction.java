@@ -4,8 +4,8 @@ package ca.ab.cbe.wahs.ajw;
 public enum Direction {
 	NONE, NORTH, EAST, SOUTH, WEST;
 	
-	public Direction opposite(Direction direction) {
-		switch (direction) {
+	public Direction opposite() {
+		switch (this) {
 		case NORTH:
 			return SOUTH;
 		case EAST:
@@ -17,7 +17,7 @@ public enum Direction {
 		case NONE:
 			return NONE;
 		default:
-			System.err.println("Invalid direction passed to opposite, " + direction.toString());
+			System.err.println("Invalid direction passed to opposite, " + this.toString());
 			return NONE;
 		}
 	}

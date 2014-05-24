@@ -35,6 +35,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) leftDown = true;
 		if (e.getButton() == MouseEvent.BUTTON3) rightDown = true;
+		num = -1; //Incase the player selected a tile with the mouse
 	}
 	
 	public void keyPressed(KeyEvent e) {
