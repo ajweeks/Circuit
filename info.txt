@@ -7,7 +7,7 @@
    -blank: NONE
 -have an alive boolean storing whether or not it is being powered
 -have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness), in the order of: { north, east, south, west };
-
+-inverter tiles have 4 neighbors, but only "care" about the ones in front of and behind itself
 --TO DO LIST--
 !!-Fix lingering power which does not go away after the removal of a power source
      -Maybe by "following" the power through each wire instead of just checking if neighbors are powered

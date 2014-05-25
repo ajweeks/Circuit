@@ -15,9 +15,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Circuit extends JFrame implements Runnable {
@@ -175,8 +177,9 @@ public class Circuit extends JFrame implements Runnable {
 		renderButton(loadGame, g);
 		renderButton(help, g);
 		
-		if (!canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
-			
+		//TODO re-enable focus manager
+		//if (!canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
+		
 		if (paused) {
 			//Render translucent gray over entire screen
 			g.setColor(new Color(65, 75, 75, 160));
@@ -227,22 +230,46 @@ public class Circuit extends JFrame implements Runnable {
 			if (tile.direction == Direction.NORTH) {
 				if (tile.powered) g.drawImage(inverterN_ON, x, y - tileSize, null);
 				else g.drawImage(inverterN_OFF, x, y - tileSize, null);
+				
+				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
+				if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2 - 5); //N
+				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
+				if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
+					
 			} else if (tile.direction == Direction.EAST) {
 				if (tile.powered) g.drawImage(inverterE_ON, x, y - tileSize, null);
 				else g.drawImage(inverterE_OFF, x, y - tileSize, null);
+				
+				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
+				if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) + 4, y - (tileSize / 2) - 1, (tileSize / 2) - 4, 5); //E
+				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
+				if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //W
+					
 			} else if (tile.direction == Direction.SOUTH) {
 				if (tile.powered) g.drawImage(inverterS_ON, x, y - tileSize, null);
 				else g.drawImage(inverterS_OFF, x, y - tileSize, null);
+				
+				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
+				if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
+				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
+				if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) + 5, 5, tileSize / 2 - 5); //S
+					
 			} else if (tile.direction == Direction.WEST) {
 				if (tile.powered) g.drawImage(inverterW_ON, x, y - tileSize, null);
 				else g.drawImage(inverterW_OFF, x, y - tileSize, null);
+				
+				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
+				if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
+				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
+				if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) - 5, 5); //W
+					
 			} else { //problems
 				g.setColor(Color.RED);
 				g.fillRect(x + 1, y - tileSize + 1, tileSize - 1, tileSize - 1);
 			}
 			break;
 		case POWER:
-			g.setColor(colour.lightRed);
+			g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
 			g.fillOval(x + (tileSize / 2) - 5, y - (tileSize / 2) - 6, (tileSize / 3), (tileSize / 3));
 			
 			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
@@ -270,38 +297,53 @@ public class Circuit extends JFrame implements Runnable {
 	private boolean[] updateConnections(int x, int y) {
 		boolean[] newNeighbors = new boolean[] { false, false, false, false };
 		Tile curTile = grid.tiles[y * grid.width + x];
-		if (curTile.type == TileType.BLANK || curTile.type == TileType.NULL || curTile.type == TileType.INVERTER) return newNeighbors; //These tiles don't care about neighbors
+		if (curTile.type == TileType.BLANK || curTile.type == TileType.NULL) return newNeighbors; //These tiles don't care about neighbors
 			
 		Tile above = getTileAt(x, y - 1);
 		Tile below = getTileAt(x, y + 1);
 		Tile right = getTileAt(x + 1, y);
 		Tile left = getTileAt(x - 1, y);
 		
-		if (connecting(curTile, above, Direction.SOUTH)) newNeighbors[0] = true;
-		if (connecting(curTile, right, Direction.WEST)) newNeighbors[1] = true;
-		if (connecting(curTile, below, Direction.NORTH)) newNeighbors[2] = true;
-		if (connecting(curTile, left, Direction.EAST)) newNeighbors[3] = true;
+		if (connects(curTile, above, Direction.SOUTH)) newNeighbors[0] = true;
+		if (connects(curTile, right, Direction.WEST)) newNeighbors[1] = true;
+		if (connects(curTile, below, Direction.NORTH)) newNeighbors[2] = true;
+		if (connects(curTile, left, Direction.EAST)) newNeighbors[3] = true;
 		
 		return newNeighbors;
 	}
 	
 	/** @param tile - the tile which you are checking
-	 *  @param direction - the direction towards the current tile
-	 *  @return */
-	private boolean connecting(Tile curTile, Tile tile, Direction direction) {
-		switch (tile.type) {
+	 *  @param curTile - the tile who's neighbors are being updated currently
+	 *  @param direction - the direction from tile towards curTile
+	 *  @return Whether or not curTile connects to tile*/
+	private boolean connects(Tile curTile, Tile tile, Direction direction) {
+		if (tile.type == TileType.BLANK || tile.type == TileType.NULL || curTile.type == TileType.BLANK || curTile.type == TileType.NULL)
+			return false;
+		switch (curTile.type) {
 		case INVERTER:
-			if (curTile.type == TileType.POWER) {
-				if (tile.direction == direction.opposite()) return true; //You can't feed an inverter into a power tile
-			} else if (tile.direction == direction || tile.direction == direction.opposite()) return true;
-			else return false;
+			if (tile.type == TileType.INVERTER) return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
+			if (curTile.direction == direction || curTile.direction == direction.opposite()) { //Only update connections to the front and back
+				if (tile.type == TileType.WIRE) return true; //update all connections, even though we don't render sideways ones
+					
+				if (tile.type == TileType.POWER) {
+					return curTile.direction == direction; //power tile is behind inverter
+				} else if (tile.direction == direction || tile.direction == direction.opposite()) return true;
+				
+				if (direction == curTile.direction) return curTile.powered ? tile.powered : !tile.powered;
+				else if (direction == curTile.direction.opposite()) return curTile.powered ? !tile.powered : tile.powered;
+			} else return false;
 		case POWER:
+			if (tile.type == TileType.INVERTER) return (tile.direction == direction.opposite());
+			else if (tile.type == TileType.WIRE) return true;
 			return curTile.type != TileType.POWER; //power tiles don't connect to other power tiles
 		case WIRE:
-			return true;
-		case NULL:
-		case BLANK:
-			return false;
+			if (tile.type == TileType.INVERTER) {
+				if (tile.direction == direction) { //facing towards (output side of converter)
+					if (tile.powered != curTile.powered) return true; //Only connect if 
+				} else if (tile.direction == direction.opposite()) { //facing away (input side of converter)
+					return true;
+				}
+			} else if (tile.type == TileType.POWER || tile.type == TileType.WIRE) return true;
 		default:
 			return false;
 		}
@@ -310,7 +352,7 @@ public class Circuit extends JFrame implements Runnable {
 	private boolean checkPowered(int x, int y) {
 		Tile curTile = grid.tiles[y * grid.width + x];
 		if (curTile.type == TileType.BLANK) return false;
-		if (curTile.type == TileType.POWER) return true;
+		if (curTile.type == TileType.POWER) return curTile.powered;
 		
 		Tile above = getTileAt(x, y - 1);
 		Tile below = getTileAt(x, y + 1);
@@ -361,12 +403,13 @@ public class Circuit extends JFrame implements Runnable {
 	 * @param tile - the tile which you are checking
 	 *  @param direction - the direction towards the current tile (only affects inverters) */
 	private boolean givingPower(Tile tile, Direction direction) {
+		//FIXME redo entire power system
 		switch (tile.type) {
 		case INVERTER:
 			if (tile.direction == direction) return !tile.powered;
 			else return false;
 		case POWER:
-			return true;
+			return tile.powered;
 		case WIRE:
 			return tile.powered;
 		case NULL:
@@ -432,11 +475,22 @@ public class Circuit extends JFrame implements Runnable {
 		if (help.mouseInBounds(input)) {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
-				String message = "Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
-						+ "Left click to place/roatate objects on the grid.\r\n" + "Right click to clear a spot on the grid.\r\n"
-						+ "Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
-						+ "Use the number keys to quickly select different tile tile types.\r\n" + "Hit esc to pause/unpause";
-				JOptionPane.showMessageDialog(this, message, "Circuit", JOptionPane.PLAIN_MESSAGE);
+				JTextArea textArea = new JTextArea("Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
+						+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
+						+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
+						+ "-Use the number keys to quickly select different tile tile types.\r\n" + "-Hit esc to pause/unpause");
+				textArea.setEditable(false);
+				textArea.setColumns(25);
+				textArea.setRows(60);
+				textArea.setLineWrap(true);
+				textArea.setWrapStyleWord(true);
+				textArea.setFont(new Font("Consolas", Font.BOLD, 16));
+				textArea.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
+				JDialog dialog = new JDialog(getOwner(), "Help");
+				dialog.add(textArea);
+				dialog.setSize(580, 300);
+				dialog.setLocationRelativeTo(null);
+				dialog.setVisible(true);
 			}
 		} else help.hover = false;
 		
@@ -457,6 +511,9 @@ public class Circuit extends JFrame implements Runnable {
 					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
 						grid.tiles[y * grid.width + x].direction = rotateCW(grid, x, y);
+					case POWER:
+						grid.tiles[y * grid.width + x].powered = !grid.tiles[y * grid.width + x].powered;
+						break;
 					default:
 						break;
 					}
@@ -502,6 +559,11 @@ public class Circuit extends JFrame implements Runnable {
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
 		chooser.setSelectedFile(new File("save.ser"));
 		if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+			if (!chooser.getSelectedFile().getName().endsWith(".ser")) {
+				JOptionPane.showMessageDialog(null, "Must be saved as a .ser file! Please try again.", "Invalid file type!",
+						JOptionPane.DEFAULT_OPTION);
+				return;
+			}
 			File save = new File(chooser.getSelectedFile().getName());
 			if (save.exists()) {
 				int i = 0;

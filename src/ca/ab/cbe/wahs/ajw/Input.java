@@ -92,6 +92,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public void mouseDragged(MouseEvent e) {
 		x = e.getX();
 		y = e.getY();
+		//TODO add right click-ctrl dragging
 		if (e.isControlDown()) leftDown = true;
 	}
 	
