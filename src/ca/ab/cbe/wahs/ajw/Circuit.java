@@ -48,7 +48,7 @@ public class Circuit extends JFrame implements Runnable {
 	private Image inverterW_ON;
 	private Image inverterW_OFF;
 	
-	private File curDir = new File("");
+	private File savesDirectory;
 	private Canvas canvas;
 	private Tile[] selectionGrid;
 	private int selectedTile; //Index in selection grid of the current selected tile
@@ -73,6 +73,8 @@ public class Circuit extends JFrame implements Runnable {
 		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE), new Tile(TileType.INVERTER, Direction.NORTH),
 				new Tile(TileType.POWER) };
 		selectedTile = 0;
+		
+		savesDirectory = new File("saves");
 		
 		inverterN_ON = new ImageIcon("res/inverterN_ON.png").getImage();
 		inverterN_OFF = new ImageIcon("res/inverterN_OFF.png").getImage();
@@ -190,7 +192,8 @@ public class Circuit extends JFrame implements Runnable {
 			g.drawString("PAUSED", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("PAUSED") / 2), 200);
 			
 			g.setFont(font.deriveFont(20f));
-			g.drawString("(esc to unpause)", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2), 250);
+			g.drawString("(esc to unpause)", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2),
+					250);
 		}
 		
 		g.dispose();
@@ -286,7 +289,8 @@ public class Circuit extends JFrame implements Runnable {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y * grid.width + x].type == TileType.BLANK) continue; //No need updating blank tiles
+				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL)
+					continue; //No need updating blank or null tiles
 					
 				grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
@@ -323,7 +327,7 @@ public class Circuit extends JFrame implements Runnable {
 		case INVERTER:
 			if (tile.type == TileType.INVERTER) return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
 			if (curTile.direction == direction || curTile.direction == direction.opposite()) { //Only update connections to the front and back
-				if (tile.type == TileType.WIRE) return true; //update all connections, even though we don't render sideways ones
+				if (tile.type == TileType.WIRE) if (!tile.powered) return true; //update all connections, even though we don't render sideways ones
 					
 				if (tile.type == TileType.POWER) {
 					return curTile.direction == direction; //power tile is behind inverter
@@ -475,10 +479,11 @@ public class Circuit extends JFrame implements Runnable {
 		if (help.mouseInBounds(input)) {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
-				JTextArea textArea = new JTextArea("Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
-						+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
-						+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
-						+ "-Use the number keys to quickly select different tile tile types.\r\n" + "-Hit esc to pause/unpause");
+				JTextArea textArea = new JTextArea(
+						"Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
+								+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
+								+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
+								+ "-Use the number keys to quickly select different tile tile types.\r\n" + "-Hit esc to pause/unpause");
 				textArea.setEditable(false);
 				textArea.setColumns(25);
 				textArea.setRows(60);
@@ -550,60 +555,55 @@ public class Circuit extends JFrame implements Runnable {
 	
 	/** Overwrites the existing saveBoard file */
 	private void saveBoard() {
-		JFileChooser chooser = new JFileChooser();
-		try {
-			chooser.setCurrentDirectory(curDir.getCanonicalFile());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		JFileChooser chooser = new JFileChooser(savesDirectory);
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
 		chooser.setSelectedFile(new File("save.ser"));
 		if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
 			if (!chooser.getSelectedFile().getName().endsWith(".ser")) {
 				JOptionPane.showMessageDialog(null, "Must be saved as a .ser file! Please try again.", "Invalid file type!",
 						JOptionPane.DEFAULT_OPTION);
+				chooser.getSelectedFile().delete();
 				return;
 			}
-			File save = new File(chooser.getSelectedFile().getName());
+			File save = chooser.getSelectedFile().getAbsoluteFile();
 			if (save.exists()) {
 				int i = 0;
-				if ((i = JOptionPane.showConfirmDialog(null,
-						chooser.getSelectedFile().getName() + " already exists! Would you like to overwrite it?", "File exists",
-						JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
+				if ((i = JOptionPane.showConfirmDialog(null, chooser.getSelectedFile().getName()
+						+ " already exists! Would you like to overwrite it?", "File exists", JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
 					save.delete();
 				} else if (i == JOptionPane.NO_OPTION) return;
 			}
 			
 			try {
 				save.createNewFile();
-				ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(chooser.getSelectedFile().getName()));
+				ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(save.getAbsoluteFile()));
 				out.writeObject(grid);
 				out.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		
 	}
 	
 	private void loadBoard() {
-		JFileChooser chooser = new JFileChooser();
-		try {
-			chooser.setCurrentDirectory(curDir.getCanonicalFile());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		//LATER add save check to prevent overwritten files
+		JFileChooser chooser = new JFileChooser(savesDirectory.getAbsoluteFile());
 		chooser.setMultiSelectionEnabled(false);
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
 		if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+			if (!chooser.getSelectedFile().getName().endsWith(".ser")) {
+				JOptionPane.showMessageDialog(null, "Must be a .ser file!", "Invalid file type!", JOptionPane.DEFAULT_OPTION);
+				return;
+			}
 			try {
-				FileInputStream fileInput = new FileInputStream(chooser.getSelectedFile().getName());
-				ObjectInputStream in = new ObjectInputStream(fileInput);
-				Grid newGrid = new Grid(boardSize, boardSize);
-				newGrid = (Grid) in.readObject();
-				in.close();
-				
-				grid = newGrid;
+				FileInputStream fileInput = new FileInputStream(chooser.getSelectedFile().getAbsolutePath());
+				if (fileInput.available() > 0) {
+					ObjectInputStream in = new ObjectInputStream(fileInput);
+					Grid newGrid = new Grid(boardSize, boardSize);
+					newGrid = (Grid) in.readObject();
+					in.close();
+					grid = newGrid;
+				} else System.err.println("uhoh " + chooser.getSelectedFile().getAbsolutePath());
 			} catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
 			}
