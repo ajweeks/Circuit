@@ -555,6 +555,13 @@ public class Circuit extends JFrame implements Runnable {
 	
 	/** Overwrites the existing saveBoard file */
 	private void saveBoard() {
+		if (!savesDirectory.exists()) {
+			try {
+				savesDirectory.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		JFileChooser chooser = new JFileChooser(savesDirectory);
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
 		chooser.setSelectedFile(new File("save.ser"));
@@ -573,7 +580,6 @@ public class Circuit extends JFrame implements Runnable {
 					save.delete();
 				} else if (i == JOptionPane.NO_OPTION) return;
 			}
-			
 			try {
 				save.createNewFile();
 				ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(save.getAbsoluteFile()));
@@ -587,6 +593,13 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private void loadBoard() {
 		//LATER add save check to prevent overwritten files
+		if (!savesDirectory.exists()) {
+			try {
+				savesDirectory.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		JFileChooser chooser = new JFileChooser(savesDirectory.getAbsoluteFile());
 		chooser.setMultiSelectionEnabled(false);
 		chooser.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
