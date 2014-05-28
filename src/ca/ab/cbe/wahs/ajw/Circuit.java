@@ -120,7 +120,6 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private void render() {
-		System.out.println("rendf");
 		BufferStrategy buffer = canvas.getBufferStrategy();
 		if (buffer == null) {
 			canvas.createBufferStrategy(2);
@@ -224,7 +223,7 @@ public class Circuit extends JFrame implements Runnable {
 			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
 			if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 4, 5); //W
 				
-			if (!tile.neighbours[0] && !tile.neighbours[1] && !tile.neighbours[2] && !tile.neighbours[3]) { //There are no neighbors
+			if (!tile.neighbours[0] && !tile.neighbours[1] && !tile.neighbours[2] && !tile.neighbours[3]) { //There are no neighbours
 				g.fillRect(x + (tileSize / 2) - 1, (int) (y - (tileSize * 0.7)), 5, tileSize / 2); //V
 				g.fillRect((int) (x + tileSize * 0.3), y - (tileSize / 2) - 1, tileSize / 2, 5); //H
 			}
@@ -290,33 +289,41 @@ public class Circuit extends JFrame implements Runnable {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
 				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue; //No need updating blank or null tiles
-					
-				grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
+				//grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
+			}
+		}
+		updatePower();
+	}
+	
+	private void updatePower() {
+		for (int y = 0; y < grid.height; y++) {
+			for (int x = 0; x < grid.width; x++) {
+				
 			}
 		}
 	}
 	
 	private boolean[] updateConnections(int x, int y) {
-		boolean[] newNeighbors = new boolean[] { false, false, false, false };
+		boolean[] newNeighbours = new boolean[] { false, false, false, false };
 		Tile curTile = grid.tiles[y * grid.width + x];
-		if (curTile.type == TileType.BLANK || curTile.type == TileType.NULL) return newNeighbors; //These tiles don't care about neighbors
+		if (curTile.type == TileType.BLANK || curTile.type == TileType.NULL) return newNeighbours; //These tiles don't care about neighbours
 			
 		Tile above = getTileAt(x, y - 1);
 		Tile below = getTileAt(x, y + 1);
 		Tile right = getTileAt(x + 1, y);
 		Tile left = getTileAt(x - 1, y);
 		
-		if (connects(curTile, above, Direction.SOUTH)) newNeighbors[0] = true;
-		if (connects(curTile, right, Direction.WEST)) newNeighbors[1] = true;
-		if (connects(curTile, below, Direction.NORTH)) newNeighbors[2] = true;
-		if (connects(curTile, left, Direction.EAST)) newNeighbors[3] = true;
+		if (connects(curTile, above, Direction.SOUTH)) newNeighbours[0] = true;
+		if (connects(curTile, right, Direction.WEST)) newNeighbours[1] = true;
+		if (connects(curTile, below, Direction.NORTH)) newNeighbours[2] = true;
+		if (connects(curTile, left, Direction.EAST)) newNeighbours[3] = true;
 		
-		return newNeighbors;
+		return newNeighbours;
 	}
 	
 	/** @param tile - the tile which you are checking
-	 *  @param curTile - the tile who's neighbors are being updated currently
+	 *  @param curTile - the tile who's neighbours are being updated currently
 	 *  @param direction - the direction from tile towards curTile
 	 *  @return Whether or not curTile connects to tile*/
 	private boolean connects(Tile curTile, Tile tile, Direction direction) {
