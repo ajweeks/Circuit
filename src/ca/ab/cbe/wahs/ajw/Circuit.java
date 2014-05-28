@@ -120,6 +120,7 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private void render() {
+		System.out.println("rendf");
 		BufferStrategy buffer = canvas.getBufferStrategy();
 		if (buffer == null) {
 			canvas.createBufferStrategy(2);
@@ -192,8 +193,7 @@ public class Circuit extends JFrame implements Runnable {
 			g.drawString("PAUSED", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("PAUSED") / 2), 200);
 			
 			g.setFont(font.deriveFont(20f));
-			g.drawString("(esc to unpause)", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2),
-					250);
+			g.drawString("(esc to unpause)", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2), 250);
 		}
 		
 		g.dispose();
@@ -289,8 +289,7 @@ public class Circuit extends JFrame implements Runnable {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL)
-					continue; //No need updating blank or null tiles
+				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue; //No need updating blank or null tiles
 					
 				grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
@@ -479,11 +478,10 @@ public class Circuit extends JFrame implements Runnable {
 		if (help.mouseInBounds(input)) {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
-				JTextArea textArea = new JTextArea(
-						"Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
-								+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
-								+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
-								+ "-Use the number keys to quickly select different tile tile types.\r\n" + "-Hit esc to pause/unpause");
+				JTextArea textArea = new JTextArea("Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
+						+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
+						+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
+						+ "-Use the number keys to quickly select different tile tile types.\r\n" + "-Hit esc to pause/unpause");
 				textArea.setEditable(false);
 				textArea.setColumns(25);
 				textArea.setRows(60);
@@ -568,8 +566,9 @@ public class Circuit extends JFrame implements Runnable {
 			File save = chooser.getSelectedFile().getAbsoluteFile();
 			if (save.exists()) {
 				int i = 0;
-				if ((i = JOptionPane.showConfirmDialog(null, chooser.getSelectedFile().getName()
-						+ " already exists! Would you like to overwrite it?", "File exists", JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
+				if ((i = JOptionPane.showConfirmDialog(null,
+						chooser.getSelectedFile().getName() + " already exists! Would you like to overwrite it?", "File exists",
+						JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
 					save.delete();
 				} else if (i == JOptionPane.NO_OPTION) return;
 			}
