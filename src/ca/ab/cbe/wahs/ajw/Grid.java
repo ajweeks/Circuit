@@ -18,4 +18,10 @@ public class Grid implements Serializable {
 			tiles[i] = new Tile(TileType.BLANK);
 		}
 	}
+	
+	/** @return New blank board */
+	public static Grid clearBoard(int width, int height) {
+		return new Grid(width, height);
+	}
+	
 }

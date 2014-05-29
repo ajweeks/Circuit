@@ -28,8 +28,8 @@ public class Circuit extends JFrame implements Runnable {
 	public Font font;
 	public final Dimension SIZE = new Dimension(780, 639);
 	
-	public int boardSize = 18; //Number of tiles wide and tall the board is
-	public int tileSize = 36; //Number of pixels per tile
+	public static int boardSize = 18; //Number of tiles wide and tall the board is
+	public static int tileSize = 36; //Number of pixels per tile
 	public volatile boolean running = false;
 	public volatile boolean paused = false;
 	
@@ -39,14 +39,6 @@ public class Circuit extends JFrame implements Runnable {
 	private Button help;
 	
 	private Image icon;
-	private Image inverterN_ON;
-	private Image inverterN_OFF;
-	private Image inverterE_ON;
-	private Image inverterE_OFF;
-	private Image inverterS_ON;
-	private Image inverterS_OFF;
-	private Image inverterW_ON;
-	private Image inverterW_OFF;
 	
 	private File savesDirectory;
 	private Canvas canvas;
@@ -75,15 +67,6 @@ public class Circuit extends JFrame implements Runnable {
 		selectedTile = 0;
 		
 		savesDirectory = new File("saves");
-		
-		inverterN_ON = new ImageIcon("res/inverterN_ON.png").getImage();
-		inverterN_OFF = new ImageIcon("res/inverterN_OFF.png").getImage();
-		inverterE_ON = new ImageIcon("res/inverterE_ON.png").getImage();
-		inverterE_OFF = new ImageIcon("res/inverterE_OFF.png").getImage();
-		inverterS_ON = new ImageIcon("res/inverterS_ON.png").getImage();
-		inverterS_OFF = new ImageIcon("res/inverterS_OFF.png").getImage();
-		inverterW_ON = new ImageIcon("res/inverterW_ON.png").getImage();
-		inverterW_OFF = new ImageIcon("res/inverterW_OFF.png").getImage();
 		
 		icon = new ImageIcon("res/icon.png").getImage();
 		
@@ -152,7 +135,7 @@ public class Circuit extends JFrame implements Runnable {
 		//Hover tile 
 		if (hoverTileX > 0 && hoverTileX <= grid.tiles.length && hoverTileY >= 0 && hoverTileY <= grid.tiles.length
 				&& grid.tiles[hoverTileY * grid.width + hoverTileX - 1].type == TileType.BLANK) {
-			renderTile(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, hoverTileType);
+			hoverTileType.render(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, colour);
 			g.setColor(new Color(20, 20, 20, 100));
 			g.fillRect(hoverTileX * tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
 		}
@@ -160,7 +143,7 @@ public class Circuit extends JFrame implements Runnable {
 		//Main game board tiles
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				renderTile(x * tileSize + tileSize, y * tileSize + tileSize, g, grid.tiles[y * grid.width + x]);
+				grid.tiles[y * grid.width + x].render(x * tileSize + tileSize, y * tileSize + tileSize, g, colour);
 			}
 		}
 		
@@ -168,22 +151,22 @@ public class Circuit extends JFrame implements Runnable {
 		g.setColor(Color.ORANGE);
 		g.drawRect(0, selectedTile * tileSize, tileSize, tileSize);
 		
-		//Render selection tiles
+		//Selection tiles
 		for (int y = 0; y < selectionGrid.length; y++) {
-			renderTile(0, (y + 1) * tileSize, g, selectionGrid[y]);
+			selectionGrid[y].render(0, (y + 1) * tileSize, g, colour);
 		}
 		
-		//Render buttons
-		renderButton(clearBoard, g);
-		renderButton(saveGame, g);
-		renderButton(loadGame, g);
-		renderButton(help, g);
+		//Buttons
+		clearBoard.render(g, font);
+		saveGame.render(g, font);
+		loadGame.render(g, font);
+		help.render(g, font);
 		
 		//TODO re-enable focus manager
 		//if (!canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
 		
 		if (paused) {
-			//Render translucent gray over entire screen
+			//Translucent gray over entire screen
 			g.setColor(new Color(65, 75, 75, 160));
 			g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 			
@@ -199,91 +182,6 @@ public class Circuit extends JFrame implements Runnable {
 		buffer.show();
 	}
 	
-	private void renderButton(Button button, Graphics g) {
-		if (button.hover) g.setColor(button.hoverColour);
-		else g.setColor(button.colour);
-		
-		g.fillRect(button.x, button.y, button.width, button.height);
-		
-		g.setFont(font.deriveFont(12f));
-		g.setColor(Color.WHITE);
-		g.drawString(button.text, button.x + 10, button.y + 15);
-	}
-	
-	/** @param y - x position on screen
-	    @param x - y position on screen
-	     */
-	private void renderTile(int x, int y, Graphics g, Tile tile) {
-		g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
-		
-		switch (tile.type) {
-		case WIRE:
-			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
-			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
-			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
-			if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 4, 5); //W
-				
-			if (!tile.neighbours[0] && !tile.neighbours[1] && !tile.neighbours[2] && !tile.neighbours[3]) { //There are no neighbours
-				g.fillRect(x + (tileSize / 2) - 1, (int) (y - (tileSize * 0.7)), 5, tileSize / 2); //V
-				g.fillRect((int) (x + tileSize * 0.3), y - (tileSize / 2) - 1, tileSize / 2, 5); //H
-			}
-			break;
-		case INVERTER:
-			if (tile.direction == Direction.NORTH) {
-				if (tile.powered) g.drawImage(inverterN_ON, x, y - tileSize, null);
-				else g.drawImage(inverterN_OFF, x, y - tileSize, null);
-				
-				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
-				if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2 - 5); //N
-				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
-				if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
-					
-			} else if (tile.direction == Direction.EAST) {
-				if (tile.powered) g.drawImage(inverterE_ON, x, y - tileSize, null);
-				else g.drawImage(inverterE_OFF, x, y - tileSize, null);
-				
-				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
-				if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) + 4, y - (tileSize / 2) - 1, (tileSize / 2) - 4, 5); //E
-				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
-				if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //W
-					
-			} else if (tile.direction == Direction.SOUTH) {
-				if (tile.powered) g.drawImage(inverterS_ON, x, y - tileSize, null);
-				else g.drawImage(inverterS_OFF, x, y - tileSize, null);
-				
-				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
-				if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
-				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
-				if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) + 5, 5, tileSize / 2 - 5); //S
-					
-			} else if (tile.direction == Direction.WEST) {
-				if (tile.powered) g.drawImage(inverterW_ON, x, y - tileSize, null);
-				else g.drawImage(inverterW_OFF, x, y - tileSize, null);
-				
-				g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
-				if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
-				g.setColor(tile.powered ? colour.darkRed : colour.lightRed);
-				if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) - 5, 5); //W
-					
-			} else { //problems
-				g.setColor(Color.RED);
-				g.fillRect(x + 1, y - tileSize + 1, tileSize - 1, tileSize - 1);
-			}
-			break;
-		case POWER:
-			g.setColor(tile.powered ? colour.lightRed : colour.darkRed);
-			g.fillOval(x + (tileSize / 2) - 5, y - (tileSize / 2) - 6, (tileSize / 3), (tileSize / 3));
-			
-			if (tile.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
-			if (tile.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
-			if (tile.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
-			if (tile.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 4, 5); //W
-			break;
-		default:
-			break;
-		}
-	}
-	
 	private void update() {
 		//Update game grid
 		for (int y = 0; y < grid.height; y++) {
@@ -293,16 +191,239 @@ public class Circuit extends JFrame implements Runnable {
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
 			}
 		}
-		updatePower();
+		for (int i = 0; i < boardSize; i++) { //TODO yeah...
+			updatePower();
+		}
 	}
 	
 	private void updatePower() {
+		boolean[] checked = new boolean[boardSize * boardSize];
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				
+				if (grid.tiles[y * grid.width + x].type == TileType.INVERTER) {
+					switch (grid.tiles[y * grid.width + x].direction) {
+					case NORTH:
+						Tile tN = getTileAt(x, y + 1);
+						if (tN.type == TileType.NULL) continue;
+						else if (tN.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tN.powered;
+						else grid.tiles[y * grid.width + x].powered = tN.powered;
+						break;
+					case EAST:
+						Tile tE = getTileAt(x - 1, y);
+						if (tE.type == TileType.NULL) continue;
+						else if (tE.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tE.powered;
+						else grid.tiles[y * grid.width + x].powered = tE.powered;
+						break;
+					case SOUTH:
+						Tile tS = getTileAt(x, y + 1);
+						if (tS.type == TileType.NULL) continue;
+						else if (tS.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tS.powered;
+						else grid.tiles[y * grid.width + x].powered = tS.powered;
+						break;
+					case WEST:
+						Tile tW = getTileAt(x, y + 1);
+						if (tW.type == TileType.NULL) continue;
+						else if (tW.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tW.powered;
+						else grid.tiles[y * grid.width + x].powered = tW.powered;
+						break;
+					default:
+						break;
+					}
+				} else if (grid.tiles[y * grid.width + x].type == TileType.POWER) checkNeighbours(grid.tiles[y * grid.width + x], x, y, checked);
 			}
 		}
 	}
+	
+	private void checkNeighbours(Tile t, int x, int y, boolean[] checked) {
+		if (t.powered) {
+			powerUp(t, x, y, checked);
+			powerRight(t, x, y, checked);
+			powerDown(t, x, y, checked);
+			powerLeft(t, x, y, checked);
+		} else { //not powered
+			unPowerUp(t, x, y, checked);
+			unPowerRight(t, x, y, checked);
+			unPowerDown(t, x, y, checked);
+			unPowerLeft(t, x, y, checked);
+		}
+	}
+	
+	private void powerUp(Tile t, int x, int y, boolean[] checked) {
+		if (y - 1 < 0) return;
+		if (checked[y * boardSize + x]) return;
+		else checked[y * boardSize + x] = true;
+		if (getTileAt(x, y - 1).type == TileType.NULL) return;
+		switch (getTileAt(x, y - 1).type) {
+		case BLANK:
+		case NULL:
+		case POWER:
+			return;
+		case WIRE:
+			grid.tiles[(y - 1) * grid.width + x].powered = true;
+			checkNeighbours(grid.tiles[(y - 1) * grid.width + x], x, y - 1, checked);
+		case INVERTER:
+			if (grid.tiles[(y - 1) * grid.width + x].direction == Direction.NORTH) {
+				grid.tiles[(y - 1) * grid.width + x].powered = true;
+				checkNeighbours(grid.tiles[(y - 1) * grid.width + x], x, y - 1, checked);
+			}
+		}
+	}
+	
+	private void powerRight(Tile t, int x, int y, boolean[] checked) {
+		if (x + 1 > grid.width) return;
+		if (checked[y * boardSize + x + 1]) return;
+		else checked[y * boardSize + x + 1] = true;
+		Tile t2 = getTileAt(x + 1, y);
+		switch (t2.type) {
+		case BLANK:
+		case NULL:
+		case POWER:
+			return;
+		case WIRE:
+			t2.powered = true;
+		case INVERTER:
+			if (t2.direction == Direction.EAST) t2.powered = true;
+		}
+		grid.tiles[y * grid.width + x + 1].powered = t2.powered;
+	}
+	
+	private void powerDown(Tile t, int x, int y, boolean[] checked) {
+		//		if (y + 1 > grid.height) return;
+		//		if (checked[(y + 1) * boardSize + x]) return;
+		//		else checked[(y + 1) * boardSize + x] = true;
+		//		Tile t2 = getTileAt(x, y + 1);
+		//		switch (t2.type) {
+		//		case BLANK:
+		//		case NULL:
+		//		case POWER:
+		//			return;
+		//		case WIRE:
+		//		case INVERTER:
+		//		}
+		//		grid.tiles[(y + 1) * grid.width + x].powered = t2.powered;
+	}
+	
+	private void powerLeft(Tile t, int x, int y, boolean[] checked) {
+		//		if (x - 1 < 0) return;
+		//		if (checked[y * boardSize + x - 1]) return;
+		//		else checked[y * boardSize + x - 1] = true;
+		//		Tile t2 = getTileAt(x - 1, y);
+		//		switch (t2.type) {
+		//		case BLANK:
+		//		case NULL:
+		//		case POWER:
+		//			return;
+		//		case WIRE:
+		//		case INVERTER:
+		//		}
+		//		grid.tiles[y * grid.width + x - 1].powered = t2.powered;
+	}
+	
+	private void unPowerUp(Tile t, int x, int y, boolean[] checked) {
+		//		if (y - 1 < 0) return;
+		//		if (checked[y * boardSize + x]) return;
+		//		else checked[y * boardSize + x] = true;
+		//		Tile t2 = getTileAt(x, y - 1);
+		//		switch (t2.type) {
+		//		case BLANK:
+		//		case NULL:
+		//		case POWER:
+		//			return;
+		//		case WIRE:
+		//		case INVERTER:
+		//		}
+		//		grid.tiles[(y - 1) * grid.width + x].powered = t2.powered;
+	}
+	
+	private void unPowerRight(Tile t, int x, int y, boolean[] checked) {
+		if (x > grid.width) return;
+		
+	}
+	
+	private void unPowerDown(Tile t, int x, int y, boolean[] checked) {
+		if (y > grid.height) return;
+		
+	}
+	
+	private void unPowerLeft(Tile t, int x, int y, boolean[] checked) {
+		if (x < 0) return;
+		
+	}
+	
+	/*
+	private boolean checkPowered(int x, int y) {
+		Tile curTile = grid.tiles[y * grid.width + x];
+		if (curTile.type == TileType.BLANK) return false;
+		if (curTile.type == TileType.POWER) return curTile.powered;
+		
+		Tile above = getTileAt(x, y - 1);
+		Tile below = getTileAt(x, y + 1);
+		Tile right = getTileAt(x + 1, y);
+		Tile left = getTileAt(x - 1, y);
+		
+		if (curTile.type == TileType.INVERTER) { //Inverters are only affected by the tile behind them (north facing tiles by the tile below, east facing tiles by the tile to the left)
+			switch (curTile.direction) {
+			case NORTH:
+				if (givingPower(below, Direction.NORTH)) return true;
+				break;
+			case EAST:
+				if (givingPower(left, Direction.EAST)) return true;
+				break;
+			case SOUTH:
+				if (givingPower(above, Direction.SOUTH)) return true;
+				break;
+			case WEST:
+				if (givingPower(right, Direction.WEST)) return true;
+				break;
+			default:
+				System.err.println("Invalid inverter direction @ x: " + x + " ,y: " + y);
+				return false;
+			}
+			return false;
+		}
+		
+		if (above.type != TileType.NULL) { //type will be null if the current tile is at the top of the grid
+			if (givingPower(above, Direction.SOUTH)) return true;
+		}
+		
+		if (below.type != TileType.NULL) { //type will be null if the current tile is at the bottom of the grid
+			if (givingPower(below, Direction.NORTH)) return true;
+		}
+		
+		if (right.type != TileType.NULL) { //type will be null if the current tile is at the right side of the grid
+			if (givingPower(right, Direction.WEST)) return true;
+		}
+		
+		if (left.type != TileType.NULL) { //type will be null if the current tile is at the left side of the grid
+			if (givingPower(left, Direction.EAST)) return true;
+		}
+		
+		return false;
+	}
+	*/
+	
+	/** @return Whether <b>tile</b> is giving power towards <b>direction</b> 
+	 * @param tile - the tile which you are checking
+	 *  @param direction - the direction towards the current tile (only affects inverters) */
+	/*
+	private boolean givingPower(Tile tile, Direction direction) {
+		//FIXME redo entire power system
+		switch (tile.type) {
+		case INVERTER:
+			if (tile.direction == direction) return !tile.powered;
+			else return false;
+		case POWER:
+			return tile.powered;
+		case WIRE:
+			return tile.powered;
+		case NULL:
+		case BLANK:
+			return false;
+		default:
+			return false;
+		}
+	}
+	*/
 	
 	private boolean[] updateConnections(int x, int y) {
 		boolean[] newNeighbours = new boolean[] { false, false, false, false };
@@ -359,77 +480,6 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
-	private boolean checkPowered(int x, int y) {
-		Tile curTile = grid.tiles[y * grid.width + x];
-		if (curTile.type == TileType.BLANK) return false;
-		if (curTile.type == TileType.POWER) return curTile.powered;
-		
-		Tile above = getTileAt(x, y - 1);
-		Tile below = getTileAt(x, y + 1);
-		Tile right = getTileAt(x + 1, y);
-		Tile left = getTileAt(x - 1, y);
-		
-		if (curTile.type == TileType.INVERTER) { //Inverters are only affected by the tile behind them (north facing tiles by the tile below, east facing tiles by the tile to the left)
-			switch (curTile.direction) {
-			case NORTH:
-				if (givingPower(below, Direction.NORTH)) return true;
-				break;
-			case EAST:
-				if (givingPower(left, Direction.EAST)) return true;
-				break;
-			case SOUTH:
-				if (givingPower(above, Direction.SOUTH)) return true;
-				break;
-			case WEST:
-				if (givingPower(right, Direction.WEST)) return true;
-				break;
-			default:
-				System.err.println("Invalid inverter direction @ x: " + x + " ,y: " + y);
-				return false;
-			}
-			return false;
-		}
-		
-		if (above.type != TileType.NULL) { //type will be null if the current tile is at the top of the grid
-			if (givingPower(above, Direction.SOUTH)) return true;
-		}
-		
-		if (below.type != TileType.NULL) { //type will be null if the current tile is at the bottom of the grid
-			if (givingPower(below, Direction.NORTH)) return true;
-		}
-		
-		if (right.type != TileType.NULL) { //type will be null if the current tile is at the right side of the grid
-			if (givingPower(right, Direction.WEST)) return true;
-		}
-		
-		if (left.type != TileType.NULL) { //type will be null if the current tile is at the left side of the grid
-			if (givingPower(left, Direction.EAST)) return true;
-		}
-		
-		return false;
-	}
-	
-	/** @return Whether <b>tile</b> is giving power towards <b>direction</b> 
-	 * @param tile - the tile which you are checking
-	 *  @param direction - the direction towards the current tile (only affects inverters) */
-	private boolean givingPower(Tile tile, Direction direction) {
-		//FIXME redo entire power system
-		switch (tile.type) {
-		case INVERTER:
-			if (tile.direction == direction) return !tile.powered;
-			else return false;
-		case POWER:
-			return tile.powered;
-		case WIRE:
-			return tile.powered;
-		case NULL:
-		case BLANK:
-			return false;
-		default:
-			return false;
-		}
-	}
-	
 	/** @return the tile with x and y coordinates, or a Tile with type NULL if x or y are out of range */
 	private Tile getTileAt(int x, int y) {
 		if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) return new Tile(TileType.NULL);
@@ -461,7 +511,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (clearBoard.mouseInBounds(input)) {
 			clearBoard.hover = true;
 			if (input.leftDown || input.rightDown) {
-				grid = clearBoard(boardSize, boardSize);
+				grid = Grid.clearBoard(boardSize, boardSize);
 			}
 		} else clearBoard.hover = false;
 		
@@ -520,7 +570,7 @@ public class Circuit extends JFrame implements Runnable {
 				} else { //The selected tile is the same type as the tile being clicked, so rotate it
 					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
-						grid.tiles[y * grid.width + x].direction = rotateCW(grid, x, y);
+						grid.tiles[y * grid.width + x].direction = Tile.rotateCW(grid, x, y);
 					case POWER:
 						grid.tiles[y * grid.width + x].powered = !grid.tiles[y * grid.width + x].powered;
 						break;
@@ -535,28 +585,6 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	//--------------Helper methods------------------------
-	
-	/** @return New blank board */
-	public static Grid clearBoard(int width, int height) {
-		return new Grid(width, height);
-	}
-	
-	/** @return The direction of the tile at <b>grid[y][x]</b> rotated clockwise once */
-	public static Direction rotateCW(Grid grid, int x, int y) {
-		switch (grid.tiles[y * grid.width + x].direction) {
-		case NORTH:
-			return Direction.EAST;
-		case EAST:
-			return Direction.SOUTH;
-		case SOUTH:
-			return Direction.WEST;
-		case WEST:
-			return Direction.NORTH;
-		default:
-			System.out.println("invalid direction!");
-			return Direction.NONE;
-		}
-	}
 	
 	/** Overwrites the existing saveBoard file */
 	private void saveBoard() {

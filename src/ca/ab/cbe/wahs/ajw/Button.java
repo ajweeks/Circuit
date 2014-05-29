@@ -1,6 +1,8 @@
 package ca.ab.cbe.wahs.ajw;
 
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
 
 public class Button {
 	
@@ -21,6 +23,17 @@ public class Button {
 	
 	public boolean mouseInBounds(Input input) {
 		return (input.x > this.x && input.x < this.x + this.width && input.y > this.y && input.y < this.y + this.height);
+	}
+	
+	public void render(Graphics g, Font font) {
+		if (this.hover) g.setColor(this.hoverColour);
+		else g.setColor(this.colour);
+		
+		g.fillRect(this.x, this.y, this.width, this.height);
+		
+		g.setFont(font.deriveFont(12f));
+		g.setColor(Color.WHITE);
+		g.drawString(this.text, this.x + 10, this.y + 15);
 	}
 	
 }
