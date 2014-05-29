@@ -193,6 +193,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		for (int i = 0; i < boardSize; i++) { //TODO yeah...
 			updatePower();
+			//woo
 		}
 	}
 	
