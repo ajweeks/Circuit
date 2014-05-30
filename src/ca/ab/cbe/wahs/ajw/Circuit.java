@@ -187,244 +187,65 @@ public class Circuit extends JFrame implements Runnable {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
 				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue; //No need updating blank or null tiles
-				//grid.tiles[y * grid.width + x].powered = checkPowered(x, y);
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
 			}
 		}
-		for (int i = 0; i < boardSize; i++) { //TODO yeah...
-			updatePower();
-			//woo
-		}
+		updatePower();
 	}
 	
 	private void updatePower() {
 		boolean[] checked = new boolean[boardSize * boardSize];
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				if (grid.tiles[y * grid.width + x].type == TileType.INVERTER) {
-					switch (grid.tiles[y * grid.width + x].direction) {
-					case NORTH:
-						Tile tN = getTileAt(x, y + 1);
-						if (tN.type == TileType.NULL) continue;
-						else if (tN.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tN.powered;
-						else grid.tiles[y * grid.width + x].powered = tN.powered;
-						break;
-					case EAST:
-						Tile tE = getTileAt(x - 1, y);
-						if (tE.type == TileType.NULL) continue;
-						else if (tE.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tE.powered;
-						else grid.tiles[y * grid.width + x].powered = tE.powered;
-						break;
-					case SOUTH:
-						Tile tS = getTileAt(x, y + 1);
-						if (tS.type == TileType.NULL) continue;
-						else if (tS.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tS.powered;
-						else grid.tiles[y * grid.width + x].powered = tS.powered;
-						break;
-					case WEST:
-						Tile tW = getTileAt(x, y + 1);
-						if (tW.type == TileType.NULL) continue;
-						else if (tW.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !tW.powered;
-						else grid.tiles[y * grid.width + x].powered = tW.powered;
-						break;
-					default:
-						break;
-					}
-				} else if (grid.tiles[y * grid.width + x].type == TileType.POWER) checkNeighbours(grid.tiles[y * grid.width + x], x, y, checked);
+				if (checked[y * boardSize + x]) continue; //This has already been updated
+				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue;
+				checked = updateNeighbours(grid.tiles[y * grid.width + x], x, y, checked);
 			}
 		}
 	}
 	
-	private void checkNeighbours(Tile t, int x, int y, boolean[] checked) {
-		if (t.powered) {
-			powerUp(t, x, y, checked);
-			powerRight(t, x, y, checked);
-			powerDown(t, x, y, checked);
-			powerLeft(t, x, y, checked);
-		} else { //not powered
-			unPowerUp(t, x, y, checked);
-			unPowerRight(t, x, y, checked);
-			unPowerDown(t, x, y, checked);
-			unPowerLeft(t, x, y, checked);
-		}
-	}
-	
-	private void powerUp(Tile t, int x, int y, boolean[] checked) {
-		if (y - 1 < 0) return;
-		if (checked[y * boardSize + x]) return;
-		else checked[y * boardSize + x] = true;
-		if (getTileAt(x, y - 1).type == TileType.NULL) return;
-		switch (getTileAt(x, y - 1).type) {
-		case BLANK:
-		case NULL:
-		case POWER:
-			return;
-		case WIRE:
-			grid.tiles[(y - 1) * grid.width + x].powered = true;
-			checkNeighbours(grid.tiles[(y - 1) * grid.width + x], x, y - 1, checked);
-		case INVERTER:
-			if (grid.tiles[(y - 1) * grid.width + x].direction == Direction.NORTH) {
-				grid.tiles[(y - 1) * grid.width + x].powered = true;
-				checkNeighbours(grid.tiles[(y - 1) * grid.width + x], x, y - 1, checked);
+	private boolean[] updateNeighbours(Tile t, int x, int y, boolean[] checked) {
+		checked[y * boardSize + x] = true;
+		
+		if (!t.neighbours[0]) { //N
+			if (y - 1 < 0) return checked;
+			int pos = (y - 1) * boardSize + x;
+			if (!checked[pos]) { //hasn't been checked yet..
+				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
+				grid.tiles[pos].powered = true;
+				updateNeighbours(grid.tiles[pos], x, y - 1, checked);
 			}
 		}
-	}
-	
-	private void powerRight(Tile t, int x, int y, boolean[] checked) {
-		if (x + 1 > grid.width) return;
-		if (checked[y * boardSize + x + 1]) return;
-		else checked[y * boardSize + x + 1] = true;
-		Tile t2 = getTileAt(x + 1, y);
-		switch (t2.type) {
-		case BLANK:
-		case NULL:
-		case POWER:
-			return;
-		case WIRE:
-			t2.powered = true;
-		case INVERTER:
-			if (t2.direction == Direction.EAST) t2.powered = true;
-		}
-		grid.tiles[y * grid.width + x + 1].powered = t2.powered;
-	}
-	
-	private void powerDown(Tile t, int x, int y, boolean[] checked) {
-		//		if (y + 1 > grid.height) return;
-		//		if (checked[(y + 1) * boardSize + x]) return;
-		//		else checked[(y + 1) * boardSize + x] = true;
-		//		Tile t2 = getTileAt(x, y + 1);
-		//		switch (t2.type) {
-		//		case BLANK:
-		//		case NULL:
-		//		case POWER:
-		//			return;
-		//		case WIRE:
-		//		case INVERTER:
-		//		}
-		//		grid.tiles[(y + 1) * grid.width + x].powered = t2.powered;
-	}
-	
-	private void powerLeft(Tile t, int x, int y, boolean[] checked) {
-		//		if (x - 1 < 0) return;
-		//		if (checked[y * boardSize + x - 1]) return;
-		//		else checked[y * boardSize + x - 1] = true;
-		//		Tile t2 = getTileAt(x - 1, y);
-		//		switch (t2.type) {
-		//		case BLANK:
-		//		case NULL:
-		//		case POWER:
-		//			return;
-		//		case WIRE:
-		//		case INVERTER:
-		//		}
-		//		grid.tiles[y * grid.width + x - 1].powered = t2.powered;
-	}
-	
-	private void unPowerUp(Tile t, int x, int y, boolean[] checked) {
-		//		if (y - 1 < 0) return;
-		//		if (checked[y * boardSize + x]) return;
-		//		else checked[y * boardSize + x] = true;
-		//		Tile t2 = getTileAt(x, y - 1);
-		//		switch (t2.type) {
-		//		case BLANK:
-		//		case NULL:
-		//		case POWER:
-		//			return;
-		//		case WIRE:
-		//		case INVERTER:
-		//		}
-		//		grid.tiles[(y - 1) * grid.width + x].powered = t2.powered;
-	}
-	
-	private void unPowerRight(Tile t, int x, int y, boolean[] checked) {
-		if (x > grid.width) return;
 		
-	}
-	
-	private void unPowerDown(Tile t, int x, int y, boolean[] checked) {
-		if (y > grid.height) return;
-		
-	}
-	
-	private void unPowerLeft(Tile t, int x, int y, boolean[] checked) {
-		if (x < 0) return;
-		
-	}
-	
-	/*
-	private boolean checkPowered(int x, int y) {
-		Tile curTile = grid.tiles[y * grid.width + x];
-		if (curTile.type == TileType.BLANK) return false;
-		if (curTile.type == TileType.POWER) return curTile.powered;
-		
-		Tile above = getTileAt(x, y - 1);
-		Tile below = getTileAt(x, y + 1);
-		Tile right = getTileAt(x + 1, y);
-		Tile left = getTileAt(x - 1, y);
-		
-		if (curTile.type == TileType.INVERTER) { //Inverters are only affected by the tile behind them (north facing tiles by the tile below, east facing tiles by the tile to the left)
-			switch (curTile.direction) {
-			case NORTH:
-				if (givingPower(below, Direction.NORTH)) return true;
-				break;
-			case EAST:
-				if (givingPower(left, Direction.EAST)) return true;
-				break;
-			case SOUTH:
-				if (givingPower(above, Direction.SOUTH)) return true;
-				break;
-			case WEST:
-				if (givingPower(right, Direction.WEST)) return true;
-				break;
-			default:
-				System.err.println("Invalid inverter direction @ x: " + x + " ,y: " + y);
-				return false;
+		if (!t.neighbours[1]) { //E
+			if (x + 1 > boardSize) return checked;
+			int pos = y * boardSize + (x + 1);
+			if (!checked[pos]) { //hasn't been checked yet..
+				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
+				updateNeighbours(grid.tiles[pos], x + 1, y, checked);
 			}
-			return false;
 		}
 		
-		if (above.type != TileType.NULL) { //type will be null if the current tile is at the top of the grid
-			if (givingPower(above, Direction.SOUTH)) return true;
+		if (!t.neighbours[2]) { //S
+			if (y + 1 < 0) return checked;
+			int pos = (y + 1) * boardSize + x;
+			if (!checked[pos]) { //hasn't been checked yet..
+				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
+				updateNeighbours(grid.tiles[pos], x, y + 1, checked);
+			}
 		}
 		
-		if (below.type != TileType.NULL) { //type will be null if the current tile is at the bottom of the grid
-			if (givingPower(below, Direction.NORTH)) return true;
+		if (!t.neighbours[3]) { //W
+			if (x - 1 < 0) return checked;
+			int pos = y * boardSize + (x - 1);
+			if (!checked[pos]) { //hasn't been checked yet..
+				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
+				updateNeighbours(grid.tiles[pos], x - 1, y, checked);
+			}
 		}
 		
-		if (right.type != TileType.NULL) { //type will be null if the current tile is at the right side of the grid
-			if (givingPower(right, Direction.WEST)) return true;
-		}
-		
-		if (left.type != TileType.NULL) { //type will be null if the current tile is at the left side of the grid
-			if (givingPower(left, Direction.EAST)) return true;
-		}
-		
-		return false;
+		return checked;
 	}
-	*/
-	
-	/** @return Whether <b>tile</b> is giving power towards <b>direction</b> 
-	 * @param tile - the tile which you are checking
-	 *  @param direction - the direction towards the current tile (only affects inverters) */
-	/*
-	private boolean givingPower(Tile tile, Direction direction) {
-		//FIXME redo entire power system
-		switch (tile.type) {
-		case INVERTER:
-			if (tile.direction == direction) return !tile.powered;
-			else return false;
-		case POWER:
-			return tile.powered;
-		case WIRE:
-			return tile.powered;
-		case NULL:
-		case BLANK:
-			return false;
-		default:
-			return false;
-		}
-	}
-	*/
 	
 	private boolean[] updateConnections(int x, int y) {
 		boolean[] newNeighbours = new boolean[] { false, false, false, false };
@@ -436,10 +257,10 @@ public class Circuit extends JFrame implements Runnable {
 		Tile right = getTileAt(x + 1, y);
 		Tile left = getTileAt(x - 1, y);
 		
-		if (connects(curTile, above, Direction.SOUTH)) newNeighbours[0] = true;
-		if (connects(curTile, right, Direction.WEST)) newNeighbours[1] = true;
-		if (connects(curTile, below, Direction.NORTH)) newNeighbours[2] = true;
-		if (connects(curTile, left, Direction.EAST)) newNeighbours[3] = true;
+		newNeighbours[0] = connects(curTile, above, Direction.SOUTH);
+		newNeighbours[1] = connects(curTile, right, Direction.WEST);
+		newNeighbours[2] = connects(curTile, below, Direction.NORTH);
+		newNeighbours[3] = connects(curTile, left, Direction.EAST);
 		
 		return newNeighbours;
 	}
@@ -453,17 +274,22 @@ public class Circuit extends JFrame implements Runnable {
 			return false;
 		switch (curTile.type) {
 		case INVERTER:
-			if (tile.type == TileType.INVERTER) return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
-			if (curTile.direction == direction || curTile.direction == direction.opposite()) { //Only update connections to the front and back
-				if (tile.type == TileType.WIRE) if (!tile.powered) return true; //update all connections, even though we don't render sideways ones
+			if (direction == curTile.direction || direction.opposite() == curTile.direction) {
+				if (tile.type == TileType.INVERTER) {
+					if (tile.direction == direction || tile.direction == direction.opposite()) { return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
+					}
+				}
+				if (curTile.direction == direction || curTile.direction == direction.opposite()) { //Only update connections to the front and back
+					if (tile.type == TileType.WIRE) if (!tile.powered) return true; //update all connections, even though we don't render sideways ones
+						
+					if (tile.type == TileType.POWER) {
+						return curTile.direction == direction; //power tile is behind inverter
+					} else if (tile.direction == direction || tile.direction == direction.opposite()) return true;
 					
-				if (tile.type == TileType.POWER) {
-					return curTile.direction == direction; //power tile is behind inverter
-				} else if (tile.direction == direction || tile.direction == direction.opposite()) return true;
-				
-				if (direction == curTile.direction) return curTile.powered ? tile.powered : !tile.powered;
-				else if (direction == curTile.direction.opposite()) return curTile.powered ? !tile.powered : tile.powered;
-			} else return false;
+					if (direction == curTile.direction) return curTile.powered ? tile.powered : !tile.powered;
+					else if (direction == curTile.direction.opposite()) return curTile.powered ? !tile.powered : tile.powered;
+				} else return false;
+			}
 		case POWER:
 			if (tile.type == TileType.INVERTER) return (tile.direction == direction.opposite());
 			else if (tile.type == TileType.WIRE) return true;
@@ -471,7 +297,7 @@ public class Circuit extends JFrame implements Runnable {
 		case WIRE:
 			if (tile.type == TileType.INVERTER) {
 				if (tile.direction == direction) { //facing towards (output side of converter)
-					if (tile.powered != curTile.powered) return true; //Only connect if 
+					if (tile.powered != curTile.powered) return true;
 				} else if (tile.direction == direction.opposite()) { //facing away (input side of converter)
 					return true;
 				}
