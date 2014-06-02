@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
@@ -25,9 +26,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 	
-	public Font font;
-	public final Dimension SIZE = new Dimension(780, 639);
+	public static boolean DEBUG = true;
 	
+	public static final Dimension SIZE = new Dimension(780, 639);
 	public static int boardSize = 18; //Number of tiles wide and tall the board is
 	public static int tileSize = 36; //Number of pixels per tile
 	public volatile boolean running = false;
@@ -40,6 +41,7 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private Image icon;
 	
+	private Font font;
 	private File savesDirectory;
 	private Canvas canvas;
 	private Tile[] selectionGrid;
@@ -49,6 +51,9 @@ public class Circuit extends JFrame implements Runnable {
 	private int hoverTileX, hoverTileY; //X and Y coordinates of the current tile under the mouse
 	private Tile hoverTileType = new Tile(TileType.BLANK);
 	private Grid grid; //Main game board (width & height = boardSize)
+	
+	private int fps = 0;
+	private int frames = 0;
 	
 	public Circuit() {
 		super("Circuit");
@@ -89,6 +94,8 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private void loop() {
+		long before = System.currentTimeMillis();
+		long seconds = 0;
 		while (running) {
 			pollInput();
 			update();
@@ -98,8 +105,16 @@ public class Circuit extends JFrame implements Runnable {
 			} catch (InterruptedException io) {
 				io.printStackTrace();
 			}
+			seconds += (System.currentTimeMillis() - before);
+			if (seconds >= 1000) {
+				fps = frames;
+				seconds = 0;
+				frames = 0;
+			}
+			before = System.currentTimeMillis();
 		}
 		dispose();
+		System.exit(0);
 	}
 	
 	private void render() {
@@ -162,8 +177,22 @@ public class Circuit extends JFrame implements Runnable {
 		loadGame.render(g, font);
 		help.render(g, font);
 		
-		//TODO re-enable focus manager
-		//if (!canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
+		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
+			
+		if (DEBUG) {
+			g.setColor(Color.BLACK);
+			g.fillRect(715, 5, 50, 20);
+			
+			g.setColor(Color.WHITE);
+			g.drawString(fps + " FPS", 720, 20);
+			
+			if (hoverTileX != -1 && hoverTileY != -1 && hoverTileX != 0) {
+				int xoff = hoverTileX > 9 ? -140 : 15;
+				g.drawString(String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].powered), input.x + xoff, input.y);
+				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].neighbours), input.x + xoff, input.y + 10);
+				g.drawString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].direction.toString(), input.x + xoff, input.y + 20);
+			}
+		}
 		
 		if (paused) {
 			//Translucent gray over entire screen
@@ -180,6 +209,7 @@ public class Circuit extends JFrame implements Runnable {
 		
 		g.dispose();
 		buffer.show();
+		frames++;
 	}
 	
 	private void update() {
@@ -199,21 +229,20 @@ public class Circuit extends JFrame implements Runnable {
 			for (int x = 0; x < grid.width; x++) {
 				if (checked[y * boardSize + x]) continue; //This has already been updated
 				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue;
-				checked = updateNeighbours(grid.tiles[y * grid.width + x], x, y, checked);
+				checked = updatePowerNeighbours(grid.tiles[y * grid.width + x], x, y, checked);
+				checked[y * boardSize + x] = true;
 			}
 		}
 	}
 	
-	private boolean[] updateNeighbours(Tile t, int x, int y, boolean[] checked) {
-		checked[y * boardSize + x] = true;
-		
+	private boolean[] updatePowerNeighbours(Tile t, int x, int y, boolean[] checked) {
 		if (!t.neighbours[0]) { //N
 			if (y - 1 < 0) return checked;
 			int pos = (y - 1) * boardSize + x;
 			if (!checked[pos]) { //hasn't been checked yet..
 				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
 				grid.tiles[pos].powered = true;
-				updateNeighbours(grid.tiles[pos], x, y - 1, checked);
+				updatePowerNeighbours(grid.tiles[pos], x, y - 1, checked);
 			}
 		}
 		
@@ -222,7 +251,7 @@ public class Circuit extends JFrame implements Runnable {
 			int pos = y * boardSize + (x + 1);
 			if (!checked[pos]) { //hasn't been checked yet..
 				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				updateNeighbours(grid.tiles[pos], x + 1, y, checked);
+				updatePowerNeighbours(grid.tiles[pos], x + 1, y, checked);
 			}
 		}
 		
@@ -231,7 +260,7 @@ public class Circuit extends JFrame implements Runnable {
 			int pos = (y + 1) * boardSize + x;
 			if (!checked[pos]) { //hasn't been checked yet..
 				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				updateNeighbours(grid.tiles[pos], x, y + 1, checked);
+				updatePowerNeighbours(grid.tiles[pos], x, y + 1, checked);
 			}
 		}
 		
@@ -240,7 +269,7 @@ public class Circuit extends JFrame implements Runnable {
 			int pos = y * boardSize + (x - 1);
 			if (!checked[pos]) { //hasn't been checked yet..
 				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				updateNeighbours(grid.tiles[pos], x - 1, y, checked);
+				updatePowerNeighbours(grid.tiles[pos], x - 1, y, checked);
 			}
 		}
 		
@@ -274,22 +303,26 @@ public class Circuit extends JFrame implements Runnable {
 			return false;
 		switch (curTile.type) {
 		case INVERTER:
-			if (direction == curTile.direction || direction.opposite() == curTile.direction) {
-				if (tile.type == TileType.INVERTER) {
-					if (tile.direction == direction || tile.direction == direction.opposite()) { return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
-					}
-				}
-				if (curTile.direction == direction || curTile.direction == direction.opposite()) { //Only update connections to the front and back
-					if (tile.type == TileType.WIRE) if (!tile.powered) return true; //update all connections, even though we don't render sideways ones
-						
-					if (tile.type == TileType.POWER) {
-						return curTile.direction == direction; //power tile is behind inverter
-					} else if (tile.direction == direction || tile.direction == direction.opposite()) return true;
-					
-					if (direction == curTile.direction) return curTile.powered ? tile.powered : !tile.powered;
-					else if (direction == curTile.direction.opposite()) return curTile.powered ? !tile.powered : tile.powered;
-				} else return false;
+			if (direction != curTile.direction && direction != curTile.direction.opposite()) return false; //Must be either in front, or behind us to affect us
+			switch (tile.type) {
+			case INVERTER:
+				if (tile.direction == direction || tile.direction == direction.opposite()) return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
+				else return false;
+			case WIRE:
+				if (curTile.direction == direction) return true; //the wire is on the input side of the inverter
+				else if (curTile.direction == direction.opposite()) { //the wire is on the output side of the inverter
+					//TODO maybe just return true;?
+					return tile.powered != curTile.powered;
+				} else System.err.println("Fix connects method!");
+				break;
+			case POWER:
+				return curTile.direction == direction; //power tile is behind inverter
+			default:
+				return false;
 			}
+			//all g ^
+			if (direction == curTile.direction) return curTile.powered ? tile.powered : !tile.powered;
+			else if (direction == curTile.direction.opposite()) return curTile.powered ? !tile.powered : tile.powered;
 		case POWER:
 			if (tile.type == TileType.INVERTER) return (tile.direction == direction.opposite());
 			else if (tile.type == TileType.WIRE) return true;
@@ -302,6 +335,7 @@ public class Circuit extends JFrame implements Runnable {
 					return true;
 				}
 			} else if (tile.type == TileType.POWER || tile.type == TileType.WIRE) return true;
+			return false;
 		default:
 			return false;
 		}
@@ -318,6 +352,11 @@ public class Circuit extends JFrame implements Runnable {
 		if (paused) {
 			input.releaseAll();
 			return;
+		}
+		
+		if (input.F3) {
+			input.F3 = false;
+			DEBUG = !DEBUG;
 		}
 		
 		if (input.num != -1 && input.num < selectionGrid.length) selectedTile = input.num;

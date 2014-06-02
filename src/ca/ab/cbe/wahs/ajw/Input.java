@@ -13,6 +13,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public boolean leftDown = false; //Whether or not the user's left mouse button is down
 	public boolean rightDown = false; //Whether or not the user's right mouse button is down
 	public boolean escape = false; //Whether or not the user is hitting the esc button
+	public boolean F3 = false;
 	public int num = -1; //Current selected tile
 	
 	public Input(Canvas canvas) {
@@ -42,6 +43,9 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 		switch (e.getKeyCode()) {
 		case KeyEvent.VK_ESCAPE:
 			escape = true;
+			break;
+		case KeyEvent.VK_F3:
+			F3 = true;
 			break;
 		case KeyEvent.VK_0:
 		case KeyEvent.VK_NUMPAD0:
