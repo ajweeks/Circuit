@@ -186,7 +186,7 @@ public class Circuit extends JFrame implements Runnable {
 			g.setColor(Color.WHITE);
 			g.drawString(fps + " FPS", 720, 20);
 			
-			if (hoverTileX != -1 && hoverTileY != -1 && hoverTileX != 0) {
+			if (hoverTileX != -1 && hoverTileY != -1 && hoverTileX != 0 && !paused) {
 				int xoff = hoverTileX > 9 ? -140 : 15;
 				int yoff = hoverTileY > 9 ? -50 : 0;
 				g.setColor(new Color(25, 25, 25, 115));
@@ -220,35 +220,74 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private void update() {
-		//Update game grid
+		boolean[] checked = new boolean[boardSize * boardSize]; //Which tiles have been checked for power this update (to prevent useless multiple checks
+		
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
+				//Connections
 				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue; //No need updating blank or null tiles
 				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
-			}
-		}
-		updatePower();
-	}
-	
-	private void updatePower() {
-		boolean[] checked = new boolean[boardSize * boardSize];
-		for (int y = 0; y < grid.height; y++) {
-			for (int x = 0; x < grid.width; x++) {
+				
+				//Power
 				if (checked[y * boardSize + x]) continue; //This has already been updated
-				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue;
-				updateNeightbors(x, y, true);
-				checked[y * boardSize + x] = true;
+				if (grid.tiles[y * grid.width + x].type == TileType.POWER)
+					checked = updateNeighbours(x, y, grid.tiles[y * grid.width + x].powered, Direction.NONE, checked);
 			}
 		}
 	}
 	
-	private boolean updateNeightbors(int x, int y, boolean alive) {
-		if (alive) {
-			
-		} else { //not alive
-		
+	/** Check all neighbours (except the one coming from <code>comingFrom</code> and see if they can be set to <code>alive</code> */
+	private boolean[] updateNeighbours(int x, int y, boolean alive, Direction comingFrom, boolean[] checked) {
+		checked[y * boardSize + x] = true;
+		if (grid.tiles[y * grid.width + x].neighbours[0] && comingFrom != Direction.NORTH) { //It has a neighbour to the north and that isn't the way we came from
+			Tile above = getTileAt(x, y - 1);
+			if (above.type != TileType.NULL) { //There is a tile above us
+				if (givingPower(above, Direction.SOUTH)) { //The tile above is sending power our direction
+					if (receivesPower(grid.tiles[y * grid.width + x], Direction.NORTH)) { //Current tile can receive power from above
+						grid.tiles[y * grid.width + x].powered = true;
+						checked = updateNeighbours(x, y, alive, Direction.NONE, checked);
+					}
+					if (!checked[(y - 1) * checked.length + x]) {
+						checked = updateNeighbours(x, y - 1, alive, Direction.SOUTH, checked);
+					}
+				} else return checked;
+			}
 		}
-		return false;
+		return checked;
+	}
+	
+	/** @return if tile can receive power from Direction d*/
+	private boolean receivesPower(Tile t, Direction d) {
+		switch (t.type) {
+		case INVERTER:
+			return d == t.direction.opposite(); //Inverters receive power from their opposite side
+		case POWER:
+			return false;
+		case WIRE:
+			return true;
+		case BLANK:
+		case NULL:
+		default:
+			return false;
+		}
+	}
+	
+	/** @return if tile is sending power in Direction d */
+	private boolean givingPower(Tile t, Direction d) {
+		switch (t.type) {
+		case INVERTER:
+			if (d == t.direction.opposite()) {
+				return !t.powered;
+			} else return false;
+		case POWER:
+			return t.powered;
+		case WIRE:
+			return t.powered;
+		case BLANK:
+		case NULL:
+		default:
+			return false;
+		}
 	}
 	
 	private boolean[] updateConnections(int x, int y) {
