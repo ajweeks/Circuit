@@ -224,14 +224,22 @@ public class Circuit extends JFrame implements Runnable {
 		
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
+				Tile t = grid.tiles[y * grid.width + x];
 				//Connections
-				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue; //No need updating blank or null tiles
-				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
+				if (t.type == TileType.BLANK || t.type == TileType.NULL) continue; //No need updating blank or null tiles
+				t.neighbours = updateConnections(x, y);
 				
 				//Power
 				if (checked[y * boardSize + x]) continue; //This has already been updated
-				if (grid.tiles[y * grid.width + x].type == TileType.POWER)
-					checked = updateNeighbours(x, y, grid.tiles[y * grid.width + x].powered, Direction.NONE, checked);
+				if (t.type == TileType.POWER || t.type == TileType.INVERTER) { //only begin updating with power tiles or inverter tiles
+					if (t.type == TileType.INVERTER) {
+						//FIXME fix inverter updating thingz
+						checked = updateNeighbours(x, y, !t.powered, Direction.NONE, checked);
+					} else if (t.type == TileType.POWER) {
+						checked = updateNeighbours(x, y, t.powered, Direction.NONE, checked);
+					}
+				}
+				grid.tiles[y * grid.width + x] = t;
 			}
 		}
 	}
@@ -239,18 +247,31 @@ public class Circuit extends JFrame implements Runnable {
 	/** Check all neighbours (except the one coming from <code>comingFrom</code> and see if they can be set to <code>alive</code> */
 	private boolean[] updateNeighbours(int x, int y, boolean alive, Direction comingFrom, boolean[] checked) {
 		checked[y * boardSize + x] = true;
-		if (grid.tiles[y * grid.width + x].neighbours[0] && comingFrom != Direction.NORTH) { //It has a neighbour to the north and that isn't the way we came from
-			Tile above = getTileAt(x, y - 1);
-			if (above.type != TileType.NULL) { //There is a tile above us
-				if (givingPower(above, Direction.SOUTH)) { //The tile above is sending power our direction
-					if (receivesPower(grid.tiles[y * grid.width + x], Direction.NORTH)) { //Current tile can receive power from above
-						grid.tiles[y * grid.width + x].powered = true;
-						checked = updateNeighbours(x, y, alive, Direction.NONE, checked);
+		Tile t = getTileAt(x, y);
+		if (t.type == TileType.BLANK || t.type == TileType.NULL) return checked;
+		
+		//EAST
+		if (grid.tiles[y * grid.width + x].neighbours[1] && comingFrom != Direction.EAST) { //It has a neighbour to the east and that isn't the way we came from
+			Tile e = getTileAt(x + 1, y);
+			if (e.type != TileType.NULL) { //There is a tile to the east of us
+				if (alive) { //We're sending out power
+					if (receivesPower(e, Direction.WEST)) {
+						e.powered = true;
+						checked = updateNeighbours(x + 1, y, alive, Direction.WEST, checked);
 					}
-					if (!checked[(y - 1) * checked.length + x]) {
-						checked = updateNeighbours(x, y - 1, alive, Direction.SOUTH, checked);
+					grid.tiles[y * grid.width + x - 1] = e;
+				} else { //Not alive, we're sending out non-power
+					//N
+					Tile n = getTileAt(x, y - 1);
+					if (n.type != TileType.NULL) {
+						if (givingPower(n, Direction.SOUTH)) {
+							
+						}
 					}
-				} else return checked;
+					//S
+					
+					//W
+				}
 			}
 		}
 		return checked;
@@ -326,7 +347,8 @@ public class Circuit extends JFrame implements Runnable {
 			case WIRE:
 				if (curTile.direction == direction) return true; //the wire is on the input side of the inverter
 				else if (curTile.direction == direction.opposite()) { //the wire is on the output side of the inverter
-					return tile.powered != curTile.powered;
+					if (curTile.powered) return tile.powered != curTile.powered;
+					else return true;
 				}
 				return false;
 			case POWER:
