@@ -188,9 +188,16 @@ public class Circuit extends JFrame implements Runnable {
 			
 			if (hoverTileX != -1 && hoverTileY != -1 && hoverTileX != 0) {
 				int xoff = hoverTileX > 9 ? -140 : 15;
-				g.drawString(String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].powered), input.x + xoff, input.y);
-				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].neighbours), input.x + xoff, input.y + 10);
-				g.drawString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].direction.toString(), input.x + xoff, input.y + 20);
+				int yoff = hoverTileY > 9 ? -50 : 0;
+				g.setColor(new Color(25, 25, 25, 115));
+				g.fillRect(input.x + xoff - 5, input.y - 15 + yoff, 150, 67);
+				g.setColor(Color.WHITE);
+				g.drawString("powered: " + String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].powered), input.x + xoff, input.y - 2
+						+ yoff);
+				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].neighbours), input.x + xoff, input.y + 10 + yoff);
+				g.drawString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].direction.toString(), input.x + xoff, input.y + 22 + yoff);
+				g.drawString("x: " + input.x + " y: " + input.y, input.x + xoff, input.y + 34 + yoff);
+				g.drawString("x: " + hoverTileX + " y: " + hoverTileY, input.x + xoff, input.y + 46 + yoff);
 			}
 		}
 		
@@ -229,51 +236,19 @@ public class Circuit extends JFrame implements Runnable {
 			for (int x = 0; x < grid.width; x++) {
 				if (checked[y * boardSize + x]) continue; //This has already been updated
 				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue;
-				checked = updatePowerNeighbours(grid.tiles[y * grid.width + x], x, y, checked);
+				updateNeightbors(x, y, true);
 				checked[y * boardSize + x] = true;
 			}
 		}
 	}
 	
-	private boolean[] updatePowerNeighbours(Tile t, int x, int y, boolean[] checked) {
-		if (!t.neighbours[0]) { //N
-			if (y - 1 < 0) return checked;
-			int pos = (y - 1) * boardSize + x;
-			if (!checked[pos]) { //hasn't been checked yet..
-				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				grid.tiles[pos].powered = true;
-				updatePowerNeighbours(grid.tiles[pos], x, y - 1, checked);
-			}
-		}
+	private boolean updateNeightbors(int x, int y, boolean alive) {
+		if (alive) {
+			
+		} else { //not alive
 		
-		if (!t.neighbours[1]) { //E
-			if (x + 1 > boardSize) return checked;
-			int pos = y * boardSize + (x + 1);
-			if (!checked[pos]) { //hasn't been checked yet..
-				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				updatePowerNeighbours(grid.tiles[pos], x + 1, y, checked);
-			}
 		}
-		
-		if (!t.neighbours[2]) { //S
-			if (y + 1 < 0) return checked;
-			int pos = (y + 1) * boardSize + x;
-			if (!checked[pos]) { //hasn't been checked yet..
-				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				updatePowerNeighbours(grid.tiles[pos], x, y + 1, checked);
-			}
-		}
-		
-		if (!t.neighbours[3]) { //W
-			if (x - 1 < 0) return checked;
-			int pos = y * boardSize + (x - 1);
-			if (!checked[pos]) { //hasn't been checked yet..
-				if (grid.tiles[pos].type == TileType.BLANK || grid.tiles[pos].type == TileType.NULL) return checked;
-				updatePowerNeighbours(grid.tiles[pos], x - 1, y, checked);
-			}
-		}
-		
-		return checked;
+		return false;
 	}
 	
 	private boolean[] updateConnections(int x, int y) {
@@ -306,27 +281,24 @@ public class Circuit extends JFrame implements Runnable {
 			if (direction != curTile.direction && direction != curTile.direction.opposite()) return false; //Must be either in front, or behind us to affect us
 			switch (tile.type) {
 			case INVERTER:
-				if (tile.direction == direction || tile.direction == direction.opposite()) return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
+				if (tile.direction == curTile.direction || tile.direction == curTile.direction.opposite()) return (curTile.direction == tile.direction || curTile.direction == tile.direction
+						.opposite()); //Inverters only connect if they're facing the same way, or opposite ways
 				else return false;
 			case WIRE:
 				if (curTile.direction == direction) return true; //the wire is on the input side of the inverter
 				else if (curTile.direction == direction.opposite()) { //the wire is on the output side of the inverter
-					//TODO maybe just return true;?
 					return tile.powered != curTile.powered;
-				} else System.err.println("Fix connects method!");
-				break;
+				}
+				return false;
 			case POWER:
 				return curTile.direction == direction; //power tile is behind inverter
 			default:
 				return false;
 			}
-			//all g ^
-			if (direction == curTile.direction) return curTile.powered ? tile.powered : !tile.powered;
-			else if (direction == curTile.direction.opposite()) return curTile.powered ? !tile.powered : tile.powered;
 		case POWER:
-			if (tile.type == TileType.INVERTER) return (tile.direction == direction.opposite());
+			if (tile.type == TileType.INVERTER) return (tile.direction == direction.opposite()); //Connect if it is facing away from you
 			else if (tile.type == TileType.WIRE) return true;
-			return curTile.type != TileType.POWER; //power tiles don't connect to other power tiles
+			else return curTile.type != TileType.POWER; //power tiles don't connect to other power tiles
 		case WIRE:
 			if (tile.type == TileType.INVERTER) {
 				if (tile.direction == direction) { //facing towards (output side of converter)
