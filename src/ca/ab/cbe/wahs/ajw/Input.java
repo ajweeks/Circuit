@@ -14,6 +14,9 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public boolean rightDown = false; //Whether or not the user's right mouse button is down
 	public boolean escape = false; //Whether or not the user is hitting the esc button
 	public boolean F3 = false;
+	public boolean save = false;
+	public boolean open = false;
+	public boolean quit = false;
 	public int num = -1; //Current selected tile
 	
 	public Input(Canvas canvas) {
@@ -47,6 +50,14 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 		case KeyEvent.VK_F3:
 			F3 = true;
 			break;
+		case KeyEvent.VK_S:
+			if (e.isControlDown()) save = true;
+			break;
+		case KeyEvent.VK_O:
+			if (e.isControlDown()) open = true;
+			break;
+		case KeyEvent.VK_Q:
+			if (e.isControlDown()) quit = true;
 		case KeyEvent.VK_0:
 		case KeyEvent.VK_NUMPAD0:
 			num = 0;

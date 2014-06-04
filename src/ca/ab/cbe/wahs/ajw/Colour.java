@@ -12,4 +12,6 @@ public class Colour {
 	
 	public Color buttonColour = new Color(70, 70, 70);
 	public Color buttonHoverColour = new Color(90, 90, 90);
+	
+	public Color translucentGray = new Color(65, 75, 75, 160);
 }
