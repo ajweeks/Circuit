@@ -252,14 +252,12 @@ public class Circuit extends JFrame implements Runnable {
 		
 		//EAST
 		if (grid.tiles[y * grid.width + x].neighbours[1] && comingFrom != Direction.EAST) { //It has a neighbour to the east and that isn't the way we came from
-			Tile e = getTileAt(x + 1, y);
-			if (e.type != TileType.NULL) { //There is a tile to the east of us
+			if (x + 1 <= grid.width) { //There is a tile to the east of us
 				if (alive) { //We're sending out power
-					if (receivesPower(e, Direction.WEST)) {
-						e.powered = true;
+					if (receivesPower(grid.tiles[y * grid.width + x + 1], Direction.WEST)) {
+						grid.tiles[y * grid.width + x + 1].powered = true;
 						checked = updateNeighbours(x + 1, y, alive, Direction.WEST, checked);
 					}
-					grid.tiles[y * grid.width + x - 1] = e;
 				} else { //Not alive, we're sending out non-power
 					//N
 					Tile n = getTileAt(x, y - 1);
