@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.swing.ImageIcon;
@@ -55,6 +56,8 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private int fps = 0;
 	private int frames = 0;
+	
+	ArrayList<Vector2> powerPositions = new ArrayList<>();
 	
 	public Circuit() {
 		super("Circuit");
@@ -180,9 +183,11 @@ public class Circuit extends JFrame implements Runnable {
 		help.render(g, font);
 		quit.render(g, font);
 		
-		renderButtonHoverText(saveGame, "(crtl-s)", g);
-		renderButtonHoverText(loadGame, "(crtl-o)", g);
-		renderButtonHoverText(quit, "(crtl-q)", g);
+		if (!paused) {
+			renderButtonHoverText(saveGame, "(crtl-s)", g);
+			renderButtonHoverText(loadGame, "(crtl-o)", g);
+			renderButtonHoverText(quit, "(crtl-q)", g);
+		}
 		
 		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
 			
@@ -229,128 +234,17 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private void renderButtonHoverText(Button button, String text, Graphics g) {
 		if (input.x > button.x && input.x < button.x + button.width && input.y > button.y && input.y < button.y + button.height) {
-			g.setColor(colour.translucentGray);
-			g.fillRect(input.x - 5, input.y - 11, 50, 20);
-			g.setColor(Color.WHITE);
-			g.drawString(text, input.x, input.y);
+			g.setColor(new Color(230, 230, 230, 230)); //translucent off white
+			g.drawString(text, button.x + 45, button.y + 16);
 		}
 	}
 	
 	private void update() {
-		boolean[] checked = new boolean[boardSize * boardSize]; //Which tiles have been checked for power this update (to prevent useless multiple checks
-		
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				Tile t = grid.tiles[y * grid.width + x];
-				//Connections
-				if (t.type == TileType.BLANK || t.type == TileType.NULL) continue; //No need updating blank or null tiles
-				t.neighbours = updateConnections(x, y);
+				if (grid.tiles[y * grid.width + x].type == TileType.BLANK || grid.tiles[y * grid.width + x].type == TileType.NULL) continue; //No need updating blank or null tiles
+				grid.tiles[y * grid.width + x].neighbours = updateConnections(x, y);
 			}
-		}
-	}
-	
-	/** To be called whenever a power source (power or inverter) is updated  */
-	private void updateAllNeighbours(int x, int y) {
-		boolean[] checked = new boolean[grid.width * grid.width];
-		Tile t = getTileAt(x, y);
-		if (t.type == TileType.NULL) return;
-		boolean n = false, e = false, s = false, w = false;
-		switch (t.type) {
-		case INVERTER:
-			switch (t.direction) {
-			case NORTH:
-				n = !t.powered;
-				break;
-			case EAST:
-				e = !t.powered;
-				break;
-			case SOUTH:
-				s = !t.powered;
-				break;
-			case WEST:
-				w = !t.powered;
-				break;
-			}
-			break;
-		case POWER:
-			n = s = e = w = t.powered;
-			break;
-		case WIRE: //Shouldn't ever be called on a wire
-		case BLANK:
-		case NULL:
-			new IllegalArgumentException("updateAllNeighbours was called on a " + t.direction + "! @ x: " + x + " , y: " + y).printStackTrace();
-			return;
-		}
-		checked = updateNeighbours(x, y + 1, n, Direction.NONE, checked); //North
-		checked = updateNeighbours(x + 1, y, e, Direction.NONE, checked); //East
-		checked = updateNeighbours(x, y - 1, s, Direction.NONE, checked); //South
-		updateNeighbours(x - 1, y, w, Direction.NONE, checked); //West
-	}
-	
-	/** Check all neighbours (except the one coming from <code>Direction comingFrom</code>) to see if they can be set to <code>alive</code> */
-	private boolean[] updateNeighbours(int x, int y, boolean alive, Direction comingFrom, boolean[] checked) {
-		Tile t = getTileAt(x, y);
-		if (t.type == TileType.BLANK || t.type == TileType.NULL) return checked;
-		
-		if (checked[y * boardSize + x]) return checked; //Already has been checked
-		else checked[y * boardSize + x] = true;
-		
-		//EAST
-		if (grid.tiles[y * grid.width + x].neighbours[1] && comingFrom != Direction.EAST) { //It has a neighbour to the east and that isn't the way we came from
-			if (x + 1 <= grid.width) { //There is a tile to the east of us
-				if (alive) { //We're sending out power
-					if (receivesPower(grid.tiles[y * grid.width + x + 1], Direction.WEST)) {
-						if (givesPower(grid.tiles[y * grid.width + x], Direction.EAST)) grid.tiles[y * grid.width + x + 1].powered = true;
-						checked = updateNeighbours(x + 1, y, true, Direction.WEST, checked);
-					}
-				} else { //Not alive, we're attempting to turn off the power
-					Tile n = getTileAt(x + 1, y - 1);
-					Tile s = getTileAt(x + 1, y + 1);
-					Tile e = getTileAt(x + 2, y);
-					//The tile to the west does not need to be checked because it's where we came from
-					if (n.type != TileType.NULL && givesPower(n, Direction.SOUTH)) return checked;
-					if (s.type != TileType.NULL && givesPower(s, Direction.NORTH)) return checked;
-					if (e.type != TileType.NULL && givesPower(e, Direction.WEST)) return checked;
-					//if we reach here, there are no tiles powering this tile...
-					grid.tiles[y * grid.width + x + 1].powered = false;
-					checked = updateNeighbours(x + 1, y, false, Direction.EAST, checked);
-				}
-			}
-		}
-		return checked;
-	}
-	
-	/** @return if tile can receive power from Direction d*/
-	private boolean receivesPower(Tile t, Direction d) {
-		switch (t.type) {
-		case INVERTER:
-			return d == t.direction.opposite(); //Inverters receive power from their opposite side
-		case POWER:
-			return false;
-		case WIRE:
-			return true;
-		case BLANK:
-		case NULL:
-		default:
-			return false;
-		}
-	}
-	
-	/** @return if <code>tile</code> is giving power in <code>Direction d</code> */
-	private boolean givesPower(Tile t, Direction d) {
-		switch (t.type) {
-		case INVERTER:
-			if (d == t.direction) { //TODO .opposite() ?
-				return !t.powered;
-			} else return false;
-		case POWER:
-			return t.powered;
-		case WIRE:
-			return false;
-		case BLANK:
-		case NULL:
-		default:
-			return false;
 		}
 	}
 	
@@ -406,7 +300,9 @@ public class Circuit extends JFrame implements Runnable {
 		case WIRE:
 			if (tile.type == TileType.INVERTER) {
 				if (tile.direction == direction) { //facing towards (output side of converter)
-					if (tile.powered != curTile.powered) return true;
+					if (curTile.powered) {
+						if (!tile.powered) return true;
+					} else return true;
 				} else if (tile.direction == direction.opposite()) { //facing away (input side of converter)
 					return true;
 				}
@@ -423,8 +319,137 @@ public class Circuit extends JFrame implements Runnable {
 		return grid.tiles[y * grid.width + x];
 	}
 	
+	/** To be called whenever a power source (power or inverter) is updated (placed, rotated, or switched on/off) */
+	private void updateAllPowerNeighbours() {
+		boolean[] checked = new boolean[grid.width * grid.width];
+		//TODO make updateAllPowerNeighbours simply loop and call updateAllNeighbours(x, y) for each power pos
+		for (int i = 0; i < powerPositions.size(); i++) {
+			int x = powerPositions.get(i).x;
+			int y = powerPositions.get(i).y;
+			
+			Tile t = getTileAt(x, y);
+			if (t.type == TileType.NULL || t.type == TileType.BLANK) return;
+			boolean n = false, e = false, s = false, w = false;
+			switch (t.type) {
+			case INVERTER:
+				switch (t.direction) {
+				case NORTH:
+					n = !t.powered;
+					break;
+				case EAST:
+					e = !t.powered;
+					break;
+				case SOUTH:
+					s = !t.powered;
+					break;
+				case WEST:
+					w = !t.powered;
+					break;
+				default:
+					new IllegalArgumentException("Inverter tile has a non-valid direction: " + t.direction + "! @ x: " + x + " , y: " + y)
+							.printStackTrace();
+					return;
+				}
+				break;
+			case POWER:
+				n = s = e = w = t.powered;
+				break;
+			case WIRE: //Shouldn't ever be called on a wire
+			case BLANK:
+			case NULL:
+				new IllegalArgumentException("updateAllNeighbours was called on a " + t.type + "! @ x: " + x + " , y: " + y).printStackTrace();
+				return;
+			}
+			checked = updateNeighbours(x, y - 1, n, Direction.SOUTH, checked); //North
+			checked = updateNeighbours(x + 1, y, e, Direction.WEST, checked); //East
+			checked = updateNeighbours(x, y + 1, s, Direction.NORTH, checked); //South
+			checked = updateNeighbours(x - 1, y, w, Direction.EAST, checked); //West
+		}
+	}
+	
+	/** Check all neighbours (except the one coming from <code>Direction comingFrom</code>) to see if they can be set to <code>alive</code> */
+	private boolean[] updateNeighbours(int x, int y, boolean alive, Direction comingFrom, boolean[] checked) {
+		Tile t = getTileAt(x, y);
+		if (t.type == TileType.BLANK || t.type == TileType.NULL) return checked;
+		
+		if (checked[y * boardSize + x]) return checked; //Already has been checked
+		else checked[y * boardSize + x] = true;
+		
+		if (comingFrom != Direction.EAST) checked = updateEast(x, y, alive, checked, comingFrom);
+		
+		return checked;
+	}
+	
+	private boolean[] updateEast(int x, int y, boolean alive, boolean[] checked, Direction comingFrom) {
+		if (grid.tiles[y * grid.width + x].neighbours[1] && comingFrom != Direction.EAST) { //It has a neighbour to the east and that isn't the way we came from
+			if (x + 1 <= grid.width) { //There is a tile to the east of us
+				if (alive) { //We're sending out power
+					if (receivesPower(grid.tiles[y * grid.width + x], Direction.WEST)) {
+						System.out.println(x + " " + y + " : " + (grid.tiles[y * grid.width + x - 1].type.toString()));
+						if (givesPower(grid.tiles[y * grid.width + x - 1], Direction.EAST)) {
+							grid.tiles[y * grid.width + x].powered = true;
+							checked = updateNeighbours(x, y, true, Direction.WEST, checked);
+						}
+					}
+				} else { //Not alive, we're attempting to turn off the power
+					Tile n = getTileAt(x + 1, y - 1);
+					Tile s = getTileAt(x + 1, y + 1);
+					Tile e = getTileAt(x + 2, y);
+					//The tile to the west does not need to be checked because it's where we came from
+					if (n.type != TileType.NULL && givesPower(n, Direction.SOUTH)) return checked;
+					if (s.type != TileType.NULL && givesPower(s, Direction.NORTH)) return checked;
+					if (e.type != TileType.NULL && givesPower(e, Direction.WEST)) return checked;
+					//if we reach here, there are no tiles powering this tile...
+					grid.tiles[y * grid.width + x + 1].powered = false;
+					checked = updateNeighbours(x + 1, y, false, Direction.EAST, checked);
+				}
+			}
+		}
+		return checked;
+	}
+	
+	/** @return if tile can receive power from Direction d*/
+	private boolean receivesPower(Tile t, Direction d) {
+		switch (t.type) {
+		case INVERTER:
+			return d == t.direction.opposite(); //Inverters receive power from their opposite side
+		case POWER:
+			return false;
+		case WIRE:
+			return true;
+		case BLANK:
+		case NULL:
+		default:
+			return false;
+		}
+	}
+	
+	/** @return if <code>tile</code> is giving power in <code>Direction d</code> */
+	private boolean givesPower(Tile t, Direction d) {
+		switch (t.type) {
+		case INVERTER:
+			if (d == t.direction) {
+				return !t.powered;
+			} else return false;
+		case POWER:
+			return t.powered;
+		case WIRE:
+			return false;
+		case BLANK:
+		case NULL:
+		default:
+			return false;
+		}
+	}
+	
 	private void pollInput() {
 		if (input.escape) paused = !paused;
+		
+		if (input.quit) {
+			input.quit = false;
+			running = false;
+		}
+		
 		if (paused) {
 			input.releaseAll();
 			return;
@@ -443,11 +468,6 @@ public class Circuit extends JFrame implements Runnable {
 		if (input.open) {
 			input.open = false;
 			loadBoard();
-		}
-		
-		if (input.quit) {
-			input.quit = false;
-			running = false;
 		}
 		
 		if (input.num != -1 && input.num < selectionGrid.length) selectedTile = input.num;
@@ -495,7 +515,7 @@ public class Circuit extends JFrame implements Runnable {
 				JTextArea textArea = new JTextArea("Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
 						+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
 						+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
-						+ "-Use the number keys to quickly select different tile tile types.\r\n" + "-Hit esc to pause/unpause");
+						+ "-Use the number keys to quickly select different tile types.\r\n" + "-Hit esc to pause/unpause");
 				textArea.setEditable(false);
 				textArea.setColumns(25);
 				textArea.setRows(60);
@@ -503,6 +523,7 @@ public class Circuit extends JFrame implements Runnable {
 				textArea.setWrapStyleWord(true);
 				textArea.setFont(new Font("Consolas", Font.BOLD, 16));
 				textArea.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
+				textArea.setBackground(Color.LIGHT_GRAY);
 				JDialog dialog = new JDialog(getOwner(), "Help");
 				dialog.add(textArea);
 				dialog.setSize(580, 300);
@@ -532,27 +553,36 @@ public class Circuit extends JFrame implements Runnable {
 			} else { //Click in the game board
 				if (grid.tiles[y * grid.width + x].type != selectionGrid[selectedTile].type) { //If the tile not the selected tile
 					grid.tiles[y * grid.width + x] = Tile.copy(selectionGrid[selectedTile]);
-					if (grid.tiles[y * grid.width + x].type == TileType.POWER || grid.tiles[y * grid.width + x].type == TileType.INVERTER)
-						updateAllNeighbours(x, y);
+					if (grid.tiles[y * grid.width + x].type == TileType.POWER || grid.tiles[y * grid.width + x].type == TileType.INVERTER) {
+						powerPositions.add(new Vector2(x, y));
+					}
+					updateAllPowerNeighbours();
 				} else { //The selected tile is the same type as the tile being clicked, so rotate it
 					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
 						grid.tiles[y * grid.width + x].direction = Tile.rotateCW(grid, x, y);
-						updateAllNeighbours(x, y);
 						break;
 					case POWER:
 						grid.tiles[y * grid.width + x].powered = !grid.tiles[y * grid.width + x].powered;
-						updateAllNeighbours(x, y);
 						break;
 					default:
 						break;
 					}
+					updateAllPowerNeighbours();
 				}
 			}
 		} else if (input.rightDown && x >= 0 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
-			if (grid.tiles[y * grid.width + x].type == TileType.POWER || grid.tiles[y * grid.width + x].type == TileType.INVERTER)
-				updateAllNeighbours(x, y); //removal of power source requires an update
+			if (grid.tiles[y * grid.width + x].type == TileType.POWER || grid.tiles[y * grid.width + x].type == TileType.INVERTER) {
+				removePowerPosition(x, y);
+			}
+			updateAllPowerNeighbours(); //removal of power source requires an update
 			grid.tiles[y * grid.width + x] = Tile.newBlankTile();
+		}
+	}
+	
+	private void removePowerPosition(int x, int y) {
+		for (int i = 0; i < powerPositions.size(); i++) {
+			if (powerPositions.get(i).x == x && powerPositions.get(i).y == y) powerPositions.remove(i);
 		}
 	}
 	
