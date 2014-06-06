@@ -155,7 +155,7 @@ public class Tile implements Serializable {
 		return new Tile(TileType.BLANK);
 	}
 	
-	public static Tile copy(Tile tile) {
-		return new Tile(tile.type, tile.direction, tile.neighbours, tile.powered);
+	public Tile copy() {
+		return new Tile(this.type, this.direction, this.neighbours.clone(), this.powered);
 	}
 }
