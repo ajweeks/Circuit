@@ -25,15 +25,15 @@ public class Button {
 		return (input.x > this.x && input.x < this.x + this.width && input.y > this.y && input.y < this.y + this.height);
 	}
 	
-	public void render(Graphics g, Font font) {
+	public void render(Graphics g, Font font, int xoff, int yoff) {
 		if (this.hover) g.setColor(this.hoverColour);
 		else g.setColor(this.colour);
 		
 		g.fillRect(this.x, this.y, this.width, this.height);
 		
-		g.setFont(font.deriveFont(12f));
+		g.setFont(font);
 		g.setColor(Color.WHITE);
-		g.drawString(this.text, this.x + 10, this.y + 15);
+		g.drawString(this.text, this.x + xoff, this.y + yoff);
 	}
 	
 }

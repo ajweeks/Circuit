@@ -39,10 +39,12 @@ public class Circuit extends JFrame implements Runnable {
 	private Button loadGame;
 	private Button help;
 	private Button quit;
+	private Button resume;
 	
 	private Image icon;
 	
-	private Font font;
+	private Font font12;
+	private Font font36;
 	private File savesDirectory;
 	private Canvas canvas;
 	private Tile[] selectionGrid;
@@ -69,13 +71,15 @@ public class Circuit extends JFrame implements Runnable {
 		super("Circuit");
 		
 		colour = new Colour();
-		font = new Font("Arial", Font.BOLD, 36);
+		font36 = new Font("Arial", Font.BOLD, 36);
+		font12 = new Font("Arial", Font.BOLD, 12);
 		
 		clearBoard = new Button(695, 35, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Clear Board");
 		saveGame = new Button(695, 65, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Save");
 		loadGame = new Button(695, 95, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Load");
 		help = new Button(695, 125, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Help");
 		quit = new Button(695, 155, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Quit");
+		resume = new Button(SIZE.width / 2 - 250 / 2, 250, 250, 100, colour.buttonColour, colour.buttonHoverColour, "Resume");
 		
 		grid = new Grid(boardSize, boardSize);
 		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE), new Tile(TileType.INVERTER, Direction.NORTH),
@@ -91,7 +95,7 @@ public class Circuit extends JFrame implements Runnable {
 		canvas.setMinimumSize(SIZE);
 		canvas.setMaximumSize(SIZE);
 		canvas.setPreferredSize(SIZE);
-		canvas.setFont(font);
+		canvas.setFont(font36);
 		canvas.setFocusable(true);
 		canvas.requestFocus();
 		
@@ -183,18 +187,17 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		
 		//Buttons
-		clearBoard.render(g, font);
-		saveGame.render(g, font);
-		loadGame.render(g, font);
-		help.render(g, font);
-		quit.render(g, font);
+		clearBoard.render(g, font12, 10, 15);
+		saveGame.render(g, font12, 10, 15);
+		loadGame.render(g, font12, 10, 15);
+		help.render(g, font12, 10, 15);
+		quit.render(g, font12, 10, 15);
 		
 		if (!paused) {
-			renderButtonHoverText(saveGame, "(crtl-s)", g);
-			renderButtonHoverText(loadGame, "(crtl-o)", g);
-			renderButtonHoverText(quit, "(crtl-q)", g);
+			renderButtonHoverText(saveGame, "(crtl-s)", g, 45, 16);
+			renderButtonHoverText(loadGame, "(crtl-o)", g, 45, 16);
+			renderButtonHoverText(quit, "(crtl-q)", g, 45, 16);
 		}
-		
 		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
 			
 		if (DEBUG) {
@@ -225,12 +228,12 @@ public class Circuit extends JFrame implements Runnable {
 			g.setColor(colour.translucentGray);
 			g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 			
-			g.setFont(font.deriveFont(32f));
+			g.setFont(font36);
 			g.setColor(Color.white);
 			g.drawString("PAUSED", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("PAUSED") / 2), 200);
 			
-			g.setFont(font.deriveFont(20f));
-			g.drawString("(esc to unpause)", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("(esc to unpause)") / 2), 250);
+			resume.render(g, font36.deriveFont(30f), 70, 55);
+			renderButtonHoverText(resume, "(esc)", g, 92, 85);
 		}
 		
 		g.dispose();
@@ -238,14 +241,14 @@ public class Circuit extends JFrame implements Runnable {
 		frames++;
 	}
 	
-	private void renderButtonHoverText(Button button, String text, Graphics g) {
+	private void renderButtonHoverText(Button button, String text, Graphics g, int xoff, int yoff) {
 		if (input.x > button.x && input.x < button.x + button.width && input.y > button.y && input.y < button.y + button.height) {
 			g.setColor(new Color(230, 230, 230, 230)); //translucent off white
-			g.drawString(text, button.x + 45, button.y + 16);
+			g.drawString(text, button.x + xoff, button.y + yoff);
 		}
 	}
 	
-	int ticks = 0;
+	private int ticks = 0;
 	
 	private void update() {
 		if (paused) return;
@@ -426,68 +429,32 @@ public class Circuit extends JFrame implements Runnable {
 		if (grid.tiles[y * grid.width + x].powered) return;
 		grid.tiles[y * grid.width + x].powered = true;
 		
-		checkNorth(t, x, y, comingFrom);
-		checkEast(t, x, y, comingFrom);
-		checkSouth(t, x, y, comingFrom);
-		checkWest(t, x, y, comingFrom);
+		checkDirection(t, x, y, 0, comingFrom, 0, -1); //N
+		checkDirection(t, x, y, 1, comingFrom, 1, 0); //E
+		checkDirection(t, x, y, 2, comingFrom, 0, 1); //S
+		checkDirection(t, x, y, 3, comingFrom, -1, 0); //W
 	}
 	
-	private void checkNorth(Tile t, int x, int y, Direction comingFrom) {
-		if (t.neighbours[0] && comingFrom != Direction.NORTH) {
-			if (getTileAt(x, y - 1).type != TileType.NULL) {
-				if (getTileAt(x, y - 1).type == TileType.INVERTER) {
-					if (getTileAt(x, y - 1).direction == comingFrom.opposite()) grid.tiles[(y - 1) * grid.width + x].powered = true;
-					else grid.tiles[(y - 1) * grid.width + x].powered = false;
-				} else if (getTileAt(x, y - 1).type == TileType.POWER) return;
-				else grid.tiles[(y - 1) * grid.width + x].powered = true;
-				
-				floodFillAllExcept(x, y - 1, Direction.SOUTH);
-			}
-		}
-	}
-	
-	private void checkEast(Tile t, int x, int y, Direction comingFrom) {
-		if (t.neighbours[1] && comingFrom != Direction.EAST) {
-			if (getTileAt(x + 1, y).type != TileType.NULL) {
-				if (getTileAt(x + 1, y).type == TileType.INVERTER) {
-					System.out.println("B");//FIXME
-					if (getTileAt(x + 1, y).direction == comingFrom.opposite()) {
-						grid.tiles[y * grid.width + x + 1].powered = true;
+	private void checkDirection(Tile t, int x, int y, int direction, Direction comingFrom, int xoff, int yoff) {
+		Direction d = Direction.NONE;
+		if (direction == 0) d = Direction.NORTH;
+		else if (direction == 1) d = Direction.EAST;
+		else if (direction == 2) d = Direction.SOUTH;
+		else if (direction == 3) d = Direction.WEST;
+		else new IllegalArgumentException("Illegal direction passed to checkDirection: " + direction + " @ x: " + x + ", y: " + y).printStackTrace();
+		
+		if (t.neighbours[direction] && comingFrom != d) {
+			if (getTileAt(x + xoff, y + yoff).type != TileType.NULL) {
+				if (getTileAt(x + xoff, y + yoff).type == TileType.INVERTER) {
+					if (getTileAt(x + xoff, y + yoff).direction == comingFrom.opposite()) {
+						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
 					} else {
-						grid.tiles[y * grid.width + x + 1].powered = false;
+						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = false;
 					}
-				} else if (getTileAt(x + 1, y).type == TileType.POWER) return;
-				else grid.tiles[y * grid.width + x + 1].powered = true;
+				} else if (getTileAt(x + xoff, y + yoff).type == TileType.POWER) return;
+				else grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
 				
-				floodFillAllExcept(x + 1, y, Direction.WEST);
-			}
-		}
-	}
-	
-	private void checkSouth(Tile t, int x, int y, Direction comingFrom) {
-		if (t.neighbours[2] && comingFrom != Direction.SOUTH) {
-			if (getTileAt(x, y + 1).type != TileType.NULL) {
-				if (getTileAt(x, y + 1).type == TileType.INVERTER) {
-					if (getTileAt(x, y + 1).direction == comingFrom.opposite()) grid.tiles[(y + 1) * grid.width + x].powered = true;
-					else grid.tiles[(y + 1) * grid.width + x].powered = false;
-				} else if (getTileAt(x, y + 1).type == TileType.POWER) return;
-				else grid.tiles[(y + 1) * grid.width + x].powered = true;
-				
-				floodFillAllExcept(x, y + 1, Direction.NORTH);
-			}
-		}
-	}
-	
-	private void checkWest(Tile t, int x, int y, Direction comingFrom) {
-		if (t.neighbours[3] && comingFrom != Direction.WEST) {
-			if (getTileAt(x - 1, y).type != TileType.NULL) {
-				if (getTileAt(x - 1, y).type == TileType.INVERTER) {
-					if (getTileAt(x - 1, y).direction == comingFrom.opposite()) grid.tiles[y * grid.width + x - 1].powered = true;
-					else grid.tiles[y * grid.width + x - 1].powered = false;
-				} else if (getTileAt(x - 1, y).type == TileType.POWER) return;
-				else grid.tiles[y * grid.width + x - 1].powered = true;
-				
-				floodFillAllExcept(x - 1, y, Direction.EAST);
+				floodFillAllExcept(x + xoff, y + yoff, d.opposite());
 			}
 		}
 	}
@@ -506,8 +473,18 @@ public class Circuit extends JFrame implements Runnable {
 			running = false;
 		}
 		
+		//Resume Button
+		if (paused && resume.mouseInBounds(input)) {
+			resume.hover = true;
+			if (input.leftDown || input.rightDown) {
+				paused = false;
+			}
+		} else resume.hover = false;
+		
 		if (paused) {
 			input.releaseAll();
+			hoverTileX = -2;
+			hoverTileY = -2;
 			return;
 		}
 		
