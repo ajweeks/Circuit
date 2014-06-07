@@ -24,4 +24,14 @@ public class Grid implements Serializable {
 		return new Grid(width, height);
 	}
 	
+	/** @return New blank board */
+	public static Grid allWires(int width, int height) {
+		Grid grid = new Grid(width, height);
+		for (int i = 0; i < grid.tiles.length; i++) {
+			grid.tiles[i].type = TileType.WIRE;
+			grid.tiles[i].direction = Direction.NONE;
+		}
+		return grid;
+	}
+	
 }

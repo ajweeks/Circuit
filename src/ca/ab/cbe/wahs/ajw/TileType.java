@@ -1,5 +1,7 @@
 package ca.ab.cbe.wahs.ajw;
 
-public enum TileType {
+import java.io.Serializable;
+
+public enum TileType implements Serializable {
 	NULL, BLANK, WIRE, INVERTER, POWER;
 }

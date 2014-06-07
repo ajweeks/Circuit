@@ -150,11 +150,11 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		
 		//Hover tile 
-		if (hoverTileX > 0 && hoverTileX <= grid.tiles.length && hoverTileY >= 0 && hoverTileY <= grid.tiles.length
-				&& grid.tiles[hoverTileY * grid.width + hoverTileX - 1].type == TileType.BLANK) {
-			hoverTileType.render(hoverTileX * tileSize, hoverTileY * tileSize + tileSize, g, colour);
+		if (hoverTileX > -1 && hoverTileX <= grid.width && hoverTileY > -1 && hoverTileY <= grid.height
+				&& grid.tiles[hoverTileY * grid.width + hoverTileX].type == TileType.BLANK) {
+			hoverTileType.render(hoverTileX * tileSize + tileSize, hoverTileY * tileSize + tileSize, g, colour);
 			g.setColor(new Color(20, 20, 20, 100));
-			g.fillRect(hoverTileX * tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
+			g.fillRect(hoverTileX * tileSize + tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
 		}
 		
 		//Main game board tiles
@@ -195,16 +195,16 @@ public class Circuit extends JFrame implements Runnable {
 			g.setColor(Color.WHITE);
 			g.drawString(fps + " FPS", 720, 20);
 			
-			if (hoverTileX != -1 && hoverTileY != -1 && hoverTileX != 0 && !paused) {
-				int xoff = hoverTileX > 9 ? -140 : 15;
-				int yoff = hoverTileY > 9 ? -50 : 0;
+			if (hoverTileX > -1 && hoverTileY > -1 && !paused) {
+				int xoff = hoverTileX > 8 ? -150 : 15;
+				int yoff = hoverTileY > 8 ? -60 : 0;
 				g.setColor(new Color(25, 25, 25, 115));
 				g.fillRect(input.x + xoff - 5, input.y - 15 + yoff, 150, 67);
 				g.setColor(Color.WHITE);
-				g.drawString("powered: " + String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].powered), input.x + xoff, input.y - 2
+				g.drawString("powered: " + String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX].powered), input.x + xoff, input.y - 2
 						+ yoff);
-				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX - 1].neighbours), input.x + xoff, input.y + 10 + yoff);
-				g.drawString("direction: " + grid.tiles[hoverTileY * grid.width + hoverTileX - 1].direction.toString(), input.x + xoff, input.y + 22
+				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX].neighbours), input.x + xoff, input.y + 10 + yoff);
+				g.drawString("direction: " + grid.tiles[hoverTileY * grid.width + hoverTileX].direction.toString(), input.x + xoff, input.y + 22
 						+ yoff);
 				g.drawString("x: " + input.x + " y: " + input.y, input.x + xoff, input.y + 34 + yoff);
 				g.drawString("x: " + hoverTileX + " y: " + hoverTileY, input.x + xoff, input.y + 46 + yoff);
@@ -310,12 +310,6 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
-	/** @return the tile with x and y coordinates, or a Tile with type NULL if x or y are out of range */
-	private Tile getTileAt(int x, int y) {
-		if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) return new Tile(TileType.NULL);
-		return grid.tiles[y * grid.width + x];
-	}
-	
 	private void updatePower() {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
@@ -353,11 +347,13 @@ public class Circuit extends JFrame implements Runnable {
 				case WIRE:
 					curTile.powered = false;
 					break;
+				case POWER: //Power tiles don't need updating
+					break;
 				}
 				
 				//Second pass 
 				if ((curTile.type == TileType.POWER && curTile.powered) || (curTile.type == TileType.INVERTER && !curTile.powered)) {
-					floodfillAllExcept(x, y, Direction.NONE);
+					floodfillAllExcept(x, y, Direction.NONE); //Start flood filling at power sources which are giving out power
 				}
 				
 				grid.tiles[y * grid.width + x] = curTile.copy();
@@ -365,60 +361,66 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
-	/** Calls floodfill on all this tile's neighbours (except the one towards direction d). <br/> If you want to update all neighbours, pass Direction.NONE */
-	private void floodfillAllExcept(int x, int y, Direction d) {
-		if (d != Direction.NORTH) floodfill(x, y - 1, Direction.SOUTH);
-		if (d != Direction.EAST) floodfill(x + 1, y, Direction.WEST);
-		if (d != Direction.SOUTH) floodfill(x, y + 1, Direction.NORTH);
-		if (d != Direction.WEST) floodfill(x - 1, y, Direction.EAST);
+	/** Calls floodfill on all this tile's neighbours (except the one towards direction comingFrom). <br/> If you want to update all neighbours, pass Direction.NONE */
+	private void floodfillAllExcept(int x, int y, Direction comingFrom) {
+		if (comingFrom != Direction.NORTH) floodfill(x, y - 1, Direction.SOUTH);
+		if (comingFrom != Direction.EAST) floodfill(x + 1, y, Direction.WEST);
+		if (comingFrom != Direction.SOUTH) floodfill(x, y + 1, Direction.NORTH);
+		if (comingFrom != Direction.WEST) floodfill(x - 1, y, Direction.EAST);
 	}
 	
 	private void floodfill(int x, int y, Direction comingFrom) {
 		Tile t = getTileAt(x, y);
-		if (t.type != TileType.WIRE) return; //only update wires and inverters
-			
-		int xoff, yoff;
-		switch (comingFrom) {
-		case NORTH:
-			yoff = -1;
-		}
-		
+		if (t.type != TileType.WIRE) return; //only update wires
+		if (grid.tiles[y * grid.width + x].powered) return;
 		grid.tiles[y * grid.width + x].powered = true;
-		floodfillAllExcept(x, y, comingFrom);
+		
+		checkNorth(t, x, y, comingFrom);
+		checkEast(t, x, y, comingFrom);
+		checkSouth(t, x, y, comingFrom);
+		checkWest(t, x, y, comingFrom);
 	}
 	
-	/** @return if tile can receive power from Direction d*/
-	private boolean receivesPower(Tile t, Direction d) {
-		switch (t.type) {
-		case INVERTER:
-			return d == t.direction.opposite(); //Inverters receive power from their opposite side
-		case POWER:
-			return false;
-		case WIRE:
-			return true;
-		case BLANK:
-		case NULL:
-		default:
-			return false;
+	private void checkNorth(Tile t, int x, int y, Direction comingFrom) {
+		if (t.neighbours[0] && comingFrom != Direction.NORTH) {
+			if (getTileAt(x, y - 1).type != TileType.NULL) {
+				grid.tiles[(y - 1) * grid.width + x].powered = true;
+			}
+			floodfillAllExcept(x, y - 1, Direction.SOUTH);
 		}
 	}
 	
-	/** @return if <code>tile</code> is giving power in <code>Direction d</code> */
-	private boolean givesPower(Tile t, Direction d) {
-		switch (t.type) {
-		case INVERTER:
-			if (d == t.direction) {
-				return !t.powered;
-			} else return false;
-		case POWER:
-			return t.powered;
-		case WIRE:
-			return false;
-		case BLANK:
-		case NULL:
-		default:
-			return false;
+	private void checkEast(Tile t, int x, int y, Direction comingFrom) {
+		if (t.neighbours[1] && comingFrom != Direction.EAST) {
+			if (getTileAt(x + 1, y).type != TileType.NULL) {
+				grid.tiles[y * grid.width + x + 1].powered = true;
+			}
+			floodfillAllExcept(x + 1, y, Direction.WEST);
 		}
+	}
+	
+	private void checkSouth(Tile t, int x, int y, Direction comingFrom) {
+		if (t.neighbours[2] && comingFrom != Direction.SOUTH) {
+			if (getTileAt(x, y + 1).type != TileType.NULL) {
+				grid.tiles[(y + 1) * grid.width + x].powered = true;
+			}
+			floodfillAllExcept(x, y + 1, Direction.NORTH);
+		}
+	}
+	
+	private void checkWest(Tile t, int x, int y, Direction comingFrom) {
+		if (t.neighbours[3] && comingFrom != Direction.WEST) {
+			if (getTileAt(x - 1, y).type != TileType.NULL) {
+				grid.tiles[y * grid.width + x - 1].powered = true;
+			}
+			floodfillAllExcept(x - 1, y, Direction.EAST);
+		}
+	}
+	
+	/** @return the tile with x and y coordinates, or a Tile with type NULL if x or y are out of range */
+	private Tile getTileAt(int x, int y) {
+		if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) return new Tile(TileType.NULL);
+		return grid.tiles[y * grid.width + x];
 	}
 	
 	private void pollInput() {
@@ -449,6 +451,11 @@ public class Circuit extends JFrame implements Runnable {
 			loadBoard();
 		}
 		
+		if (input.wires) {
+			input.wires = false;
+			grid = Grid.allWires(boardSize, boardSize);
+		}
+		
 		if (input.num != -1 && input.num < selectionGrid.length) selectedTile = input.num;
 		
 		int x = getMouseColumn(input.x);
@@ -459,8 +466,8 @@ public class Circuit extends JFrame implements Runnable {
 		hoverTileX = x;
 		hoverTileType = selectionGrid[selectedTile];
 		
-		if (y != -1 && x != -1) { //Mouse is not in game board or tile selection area
-			updateGrid(x, y);
+		if (hoverTileY != -2 && hoverTileX != -2) { //Mouse is not in game board or tile selection area
+			updateGridWithInput(x, y);
 		}
 		
 		//Clear Screen Button
@@ -524,8 +531,7 @@ public class Circuit extends JFrame implements Runnable {
 	
 	/** @param x - the x coordinate of the tile currently under the mouse
 	 *  @param y - the y coordinate of the tile currently under the mouse  */
-	private void updateGrid(int x, int y) {
-		x--; //Offset to account for tile selection column
+	private void updateGridWithInput(int x, int y) {
 		if (input.leftDown) { //Left click in game board or tile selection area
 			if (x == -1) { //Mouse is in leftmost column (tile selection area)
 				if (y + 1 <= selectionGrid.length) selectedTile = y; //Check if the selected tile has a tile to select
@@ -545,14 +551,13 @@ public class Circuit extends JFrame implements Runnable {
 					}
 				}
 			}
-		} else if (input.rightDown && x >= 0 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
+		} else if (input.rightDown && x >= -1 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
 			grid.tiles[y * grid.width + x] = Tile.newBlankTile();
 		}
 	}
 	
 	//--------------Helper methods------------------------
 	
-	//FIXME saving / loading
 	/** Overwrites the existing saveBoard file */
 	private void saveBoard() {
 		if (!savesDirectory.exists()) {
@@ -631,10 +636,10 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	/** @param x - the x position of the mouse on screen 
-	 *  @return the column the mouse is in on the game grid OR -1 if mouse is outside of game grid */
+	 *  @return the column the mouse is in on the game grid OR -1 if mouse is outside of game grid (0 = tile selection col, 1 - 18 = main grid)*/
 	public int getMouseColumn(int x) {
-		if (x > boardSize * tileSize + tileSize) return -1;
-		return Math.min((x - 1) / tileSize, boardSize);
+		if (x > boardSize * tileSize + tileSize) return -2;
+		return Math.min((x - 1) / tileSize - 1, boardSize);
 	}
 	
 	public static void main(String[] args) {

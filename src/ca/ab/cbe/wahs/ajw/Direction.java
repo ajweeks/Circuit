@@ -1,7 +1,8 @@
 package ca.ab.cbe.wahs.ajw;
 
-/**  */
-public enum Direction {
+import java.io.Serializable;
+
+public enum Direction implements Serializable {
 	NONE, NORTH, EAST, SOUTH, WEST;
 	
 	public Direction opposite() {

@@ -17,6 +17,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public boolean save = false;
 	public boolean open = false;
 	public boolean quit = false;
+	public boolean wires = false; //Fill the board with wires
 	public int num = -1; //Current selected tile
 	
 	public Input(Canvas canvas) {
@@ -58,6 +59,10 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 			break;
 		case KeyEvent.VK_Q:
 			if (e.isControlDown()) quit = true;
+			break;
+		case KeyEvent.VK_W:
+			if (e.isControlDown()) wires = true;
+			break;
 		case KeyEvent.VK_0:
 		case KeyEvent.VK_NUMPAD0:
 			num = 0;
