@@ -53,6 +53,15 @@ public class Circuit extends JFrame implements Runnable {
 	private Tile hoverTileType = new Tile(TileType.BLANK);
 	private Grid grid; //Main game board (width & height = boardSize)
 	
+	protected static Image inverterN_ON = new ImageIcon("res/inverterN_ON.png").getImage();
+	protected static Image inverterN_OFF = new ImageIcon("res/inverterN_ON.png").getImage();
+	protected static Image inverterE_ON = new ImageIcon("res/inverterE_ON.png").getImage();
+	protected static Image inverterE_OFF = new ImageIcon("res/inverterE_OFF.png").getImage();
+	protected static Image inverterS_ON = new ImageIcon("res/inverterS_ON.png").getImage();
+	protected static Image inverterS_OFF = new ImageIcon("res/inverterS_OFF.png").getImage();
+	protected static Image inverterW_ON = new ImageIcon("res/inverterW_ON.png").getImage();
+	protected static Image inverterW_OFF = new ImageIcon("res/inverterW_OFF.png").getImage();
+	
 	private int fps = 0;
 	private int frames = 0;
 	
@@ -441,8 +450,12 @@ public class Circuit extends JFrame implements Runnable {
 		if (t.neighbours[1] && comingFrom != Direction.EAST) {
 			if (getTileAt(x + 1, y).type != TileType.NULL) {
 				if (getTileAt(x + 1, y).type == TileType.INVERTER) {
-					if (getTileAt(x + 1, y).direction == comingFrom.opposite()) grid.tiles[y * grid.width + x + 1].powered = true;
-					else grid.tiles[y * grid.width + x + 1].powered = false;
+					System.out.println("B");//FIXME
+					if (getTileAt(x + 1, y).direction == comingFrom.opposite()) {
+						grid.tiles[y * grid.width + x + 1].powered = true;
+					} else {
+						grid.tiles[y * grid.width + x + 1].powered = false;
+					}
 				} else if (getTileAt(x + 1, y).type == TileType.POWER) return;
 				else grid.tiles[y * grid.width + x + 1].powered = true;
 				

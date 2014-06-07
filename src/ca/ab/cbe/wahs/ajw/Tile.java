@@ -3,40 +3,16 @@ package ca.ab.cbe.wahs.ajw;
 import static ca.ab.cbe.wahs.ajw.Circuit.tileSize;
 
 import java.awt.Graphics;
-import java.awt.Image;
 import java.io.Serializable;
-
-import javax.swing.ImageIcon;
 
 public class Tile implements Serializable {
 	private static final long serialVersionUID = 2L;
-	
-	private transient Image inverterN_ON;
-	private transient Image inverterN_OFF;
-	private transient Image inverterE_ON;
-	private transient Image inverterE_OFF;
-	private transient Image inverterS_ON;
-	private transient Image inverterS_OFF;
-	private transient Image inverterW_ON;
-	private transient Image inverterW_OFF;
 	
 	/** index 0 = N, 1 = E, 2 = S, 3 = W */
 	public boolean[] neighbours;
 	public TileType type;
 	public Direction direction;
 	public boolean powered;
-	
-	//Image initialization
-	{
-		inverterN_ON = new ImageIcon("res/inverterN_ON.png").getImage();
-		inverterN_OFF = new ImageIcon("res/inverterN_OFF.png").getImage();
-		inverterE_ON = new ImageIcon("res/inverterE_ON.png").getImage();
-		inverterE_OFF = new ImageIcon("res/inverterE_OFF.png").getImage();
-		inverterS_ON = new ImageIcon("res/inverterS_ON.png").getImage();
-		inverterS_OFF = new ImageIcon("res/inverterS_OFF.png").getImage();
-		inverterW_ON = new ImageIcon("res/inverterW_ON.png").getImage();
-		inverterW_OFF = new ImageIcon("res/inverterW_OFF.png").getImage();
-	}
 	
 	public Tile(TileType type, Direction direction, boolean[] neighbors, boolean powered) {
 		this.type = type;
@@ -80,17 +56,16 @@ public class Tile implements Serializable {
 		case INVERTER:
 			switch (direction) {
 			case NORTH:
-				if (this.powered) g.drawImage(inverterN_ON, x, y - tileSize, null);
-				else g.drawImage(inverterN_OFF, x, y - tileSize, null);
-				
+				if (this.powered) g.drawImage(Circuit.inverterN_ON, x, y - tileSize, null);
+				else g.drawImage(Circuit.inverterN_OFF, x, y - tileSize, null);
 				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
 				if (this.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2 - 5); //N
 				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
 				if (this.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
 				break;
 			case EAST:
-				if (this.powered) g.drawImage(inverterE_ON, x, y - tileSize, null);
-				else g.drawImage(inverterE_OFF, x, y - tileSize, null);
+				if (this.powered) g.drawImage(Circuit.inverterE_ON, x, y - tileSize, null);
+				else g.drawImage(Circuit.inverterE_OFF, x, y - tileSize, null);
 				
 				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
 				if (this.neighbours[1]) g.fillRect(x + (tileSize / 2) + 4, y - (tileSize / 2) - 1, (tileSize / 2) - 4, 5); //E
@@ -98,8 +73,8 @@ public class Tile implements Serializable {
 				if (this.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //W
 				break;
 			case SOUTH:
-				if (this.powered) g.drawImage(inverterS_ON, x, y - tileSize, null);
-				else g.drawImage(inverterS_OFF, x, y - tileSize, null);
+				if (this.powered) g.drawImage(Circuit.inverterS_ON, x, y - tileSize, null);
+				else g.drawImage(Circuit.inverterS_OFF, x, y - tileSize, null);
 				
 				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
 				if (this.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
@@ -107,8 +82,8 @@ public class Tile implements Serializable {
 				if (this.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) + 5, 5, tileSize / 2 - 5); //S
 				break;
 			case WEST:
-				if (this.powered) g.drawImage(inverterW_ON, x, y - tileSize, null);
-				else g.drawImage(inverterW_OFF, x, y - tileSize, null);
+				if (this.powered) g.drawImage(Circuit.inverterW_ON, x, y - tileSize, null);
+				else g.drawImage(Circuit.inverterW_OFF, x, y - tileSize, null);
 				
 				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
 				if (this.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
