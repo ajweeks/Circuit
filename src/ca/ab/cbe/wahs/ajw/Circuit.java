@@ -26,7 +26,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	
 	public static final Dimension SIZE = new Dimension(780, 639);
 	public static int boardSize = 18; //Number of tiles wide and tall the board is
@@ -236,9 +236,16 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
+	int ticks = 0;
+	
 	private void update() {
+		if (paused) return;
 		updateConnections();
-		updatePower();
+		ticks++;
+		if (ticks < 5) return;
+		ticks = 0;
+		resetPower();
+		floodFillGrid();
 	}
 	
 	private void updateConnections() {
@@ -292,7 +299,7 @@ public class Circuit extends JFrame implements Runnable {
 			}
 		case POWER:
 			if (tile.type == TileType.INVERTER) return (tile.direction == direction.opposite()); //Connect if it is facing away from you
-			else if (tile.type == TileType.WIRE) return true;
+			else if (tile.type == TileType.WIRE) return tile.powered == curTile.powered;
 			else return curTile.type != TileType.POWER; //power tiles don't connect to other power tiles
 		case WIRE:
 			if (tile.type == TileType.INVERTER) {
@@ -303,73 +310,108 @@ public class Circuit extends JFrame implements Runnable {
 				} else if (tile.direction == direction.opposite()) { //facing away (input side of converter)
 					return true;
 				}
-			} else if (tile.type == TileType.POWER || tile.type == TileType.WIRE) return true;
+			} else if (tile.type == TileType.POWER) {
+				return tile.powered == curTile.powered;
+			} else if (tile.type == TileType.WIRE) return true;
 			return false;
 		default:
 			return false;
 		}
 	}
 	
-	private void updatePower() {
+	private void resetPower() {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				Tile curTile = getTileAt(x, y);
-				
 				Tile north = getTileAt(x, y - 1);
 				Tile south = getTileAt(x, y + 1);
 				Tile east = getTileAt(x + 1, y);
 				Tile west = getTileAt(x - 1, y);
 				
-				//First pass
-				switch (curTile.type) {
+				switch (grid.tiles[y * grid.width + x].type) {
 				case BLANK:
 				case NULL:
 					continue;
 				case INVERTER:
-					switch (curTile.direction) {
+					switch (grid.tiles[y * grid.width + x].direction) {
 					case NORTH:
-						if (south.type != TileType.NULL) curTile.powered = south.powered;
+						if (south.type != TileType.NULL) {
+							if (south.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !south.powered;
+							else grid.tiles[y * grid.width + x].powered = south.powered;
+						}
 						break;
 					case EAST:
-						if (west.type != TileType.NULL) curTile.powered = west.powered;
+						if (west.type != TileType.NULL) {
+							if (west.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !west.powered;
+							else grid.tiles[y * grid.width + x].powered = west.powered;
+						}
 						break;
 					case SOUTH:
-						if (north.type != TileType.NULL) curTile.powered = north.powered;
+						if (north.type != TileType.NULL) {
+							if (north.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !north.powered;
+							else grid.tiles[y * grid.width + x].powered = north.powered;
+						}
 						break;
 					case WEST:
-						if (east.type != TileType.NULL) curTile.powered = east.powered;
+						if (east.type != TileType.NULL) {
+							if (east.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !east.powered;
+							else grid.tiles[y * grid.width + x].powered = east.powered;
+						}
 						break;
 					default:
-						new IllegalStateException("Inverter tile has invalid direction: " + curTile.direction + " @ x: " + x + ",y: " + y)
-								.printStackTrace();
+						new IllegalStateException("Inverter tile has invalid direction: " + grid.tiles[y * grid.width + x].direction + " @ x: " + x
+								+ ",y: " + y).printStackTrace();
 					}
 					break;
 				case WIRE:
-					curTile.powered = false;
+					grid.tiles[y * grid.width + x].powered = false;
 					break;
 				case POWER: //Power tiles don't need updating
 					break;
 				}
-				
-				//Second pass 
-				if ((curTile.type == TileType.POWER && curTile.powered) || (curTile.type == TileType.INVERTER && !curTile.powered)) {
-					floodfillAllExcept(x, y, Direction.NONE); //Start flood filling at power sources which are giving out power
+			}
+		}
+	}
+	
+	private void floodFillGrid() {
+		for (int y = 0; y < grid.height; y++) {
+			for (int x = 0; x < grid.width; x++) {
+				if ((grid.tiles[y * grid.width + x].type == TileType.POWER && grid.tiles[y * grid.width + x].powered)
+						|| (grid.tiles[y * grid.width + x].type == TileType.INVERTER && !grid.tiles[y * grid.width + x].powered)) {
+					floodFillAllExcept(x, y, Direction.NONE); //Start flood filling at power sources which are giving out power
 				}
-				
-				grid.tiles[y * grid.width + x] = curTile.copy();
 			}
 		}
 	}
 	
 	/** Calls floodfill on all this tile's neighbours (except the one towards direction comingFrom). <br/> If you want to update all neighbours, pass Direction.NONE */
-	private void floodfillAllExcept(int x, int y, Direction comingFrom) {
-		if (comingFrom != Direction.NORTH) floodfill(x, y - 1, Direction.SOUTH);
-		if (comingFrom != Direction.EAST) floodfill(x + 1, y, Direction.WEST);
-		if (comingFrom != Direction.SOUTH) floodfill(x, y + 1, Direction.NORTH);
-		if (comingFrom != Direction.WEST) floodfill(x - 1, y, Direction.EAST);
+	private void floodFillAllExcept(int x, int y, Direction comingFrom) {
+		if (getTileAt(x, y).type == TileType.INVERTER) { //Inverters only power one direction
+			if (getTileAt(x, y).powered) return;
+			switch (getTileAt(x, y).direction) {
+			case NORTH:
+				if (comingFrom != Direction.NORTH) floodFill(x, y - 1, Direction.SOUTH);
+				break;
+			case EAST:
+				if (comingFrom != Direction.EAST) floodFill(x + 1, y, Direction.WEST);
+				break;
+			case SOUTH:
+				if (comingFrom != Direction.SOUTH) floodFill(x, y + 1, Direction.NORTH);
+				break;
+			case WEST:
+				if (comingFrom != Direction.WEST) floodFill(x - 1, y, Direction.EAST);
+				break;
+			default:
+				break;
+			}
+		} else { //Power tiles power all directions
+			if (comingFrom != Direction.NORTH) floodFill(x, y - 1, Direction.SOUTH);
+			if (comingFrom != Direction.EAST) floodFill(x + 1, y, Direction.WEST);
+			if (comingFrom != Direction.SOUTH) floodFill(x, y + 1, Direction.NORTH);
+			if (comingFrom != Direction.WEST) floodFill(x - 1, y, Direction.EAST);
+		}
 	}
 	
-	private void floodfill(int x, int y, Direction comingFrom) {
+	private void floodFill(int x, int y, Direction comingFrom) {
 		Tile t = getTileAt(x, y);
 		if (t.type != TileType.WIRE) return; //only update wires
 		if (grid.tiles[y * grid.width + x].powered) return;
@@ -384,36 +426,56 @@ public class Circuit extends JFrame implements Runnable {
 	private void checkNorth(Tile t, int x, int y, Direction comingFrom) {
 		if (t.neighbours[0] && comingFrom != Direction.NORTH) {
 			if (getTileAt(x, y - 1).type != TileType.NULL) {
-				grid.tiles[(y - 1) * grid.width + x].powered = true;
+				if (getTileAt(x, y - 1).type == TileType.INVERTER) {
+					if (getTileAt(x, y - 1).direction == comingFrom.opposite()) grid.tiles[(y - 1) * grid.width + x].powered = true;
+					else grid.tiles[(y - 1) * grid.width + x].powered = false;
+				} else if (getTileAt(x, y - 1).type == TileType.POWER) return;
+				else grid.tiles[(y - 1) * grid.width + x].powered = true;
+				
+				floodFillAllExcept(x, y - 1, Direction.SOUTH);
 			}
-			floodfillAllExcept(x, y - 1, Direction.SOUTH);
 		}
 	}
 	
 	private void checkEast(Tile t, int x, int y, Direction comingFrom) {
 		if (t.neighbours[1] && comingFrom != Direction.EAST) {
 			if (getTileAt(x + 1, y).type != TileType.NULL) {
-				grid.tiles[y * grid.width + x + 1].powered = true;
+				if (getTileAt(x + 1, y).type == TileType.INVERTER) {
+					if (getTileAt(x + 1, y).direction == comingFrom.opposite()) grid.tiles[y * grid.width + x + 1].powered = true;
+					else grid.tiles[y * grid.width + x + 1].powered = false;
+				} else if (getTileAt(x + 1, y).type == TileType.POWER) return;
+				else grid.tiles[y * grid.width + x + 1].powered = true;
+				
+				floodFillAllExcept(x + 1, y, Direction.WEST);
 			}
-			floodfillAllExcept(x + 1, y, Direction.WEST);
 		}
 	}
 	
 	private void checkSouth(Tile t, int x, int y, Direction comingFrom) {
 		if (t.neighbours[2] && comingFrom != Direction.SOUTH) {
 			if (getTileAt(x, y + 1).type != TileType.NULL) {
-				grid.tiles[(y + 1) * grid.width + x].powered = true;
+				if (getTileAt(x, y + 1).type == TileType.INVERTER) {
+					if (getTileAt(x, y + 1).direction == comingFrom.opposite()) grid.tiles[(y + 1) * grid.width + x].powered = true;
+					else grid.tiles[(y + 1) * grid.width + x].powered = false;
+				} else if (getTileAt(x, y + 1).type == TileType.POWER) return;
+				else grid.tiles[(y + 1) * grid.width + x].powered = true;
+				
+				floodFillAllExcept(x, y + 1, Direction.NORTH);
 			}
-			floodfillAllExcept(x, y + 1, Direction.NORTH);
 		}
 	}
 	
 	private void checkWest(Tile t, int x, int y, Direction comingFrom) {
 		if (t.neighbours[3] && comingFrom != Direction.WEST) {
 			if (getTileAt(x - 1, y).type != TileType.NULL) {
-				grid.tiles[y * grid.width + x - 1].powered = true;
+				if (getTileAt(x - 1, y).type == TileType.INVERTER) {
+					if (getTileAt(x - 1, y).direction == comingFrom.opposite()) grid.tiles[y * grid.width + x - 1].powered = true;
+					else grid.tiles[y * grid.width + x - 1].powered = false;
+				} else if (getTileAt(x - 1, y).type == TileType.POWER) return;
+				else grid.tiles[y * grid.width + x - 1].powered = true;
+				
+				floodFillAllExcept(x - 1, y, Direction.EAST);
 			}
-			floodfillAllExcept(x - 1, y, Direction.EAST);
 		}
 	}
 	
