@@ -26,7 +26,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 	
 	public static final Dimension SIZE = new Dimension(780, 639);
 	public static int boardSize = 18; //Number of tiles wide and tall the board is
@@ -82,8 +82,8 @@ public class Circuit extends JFrame implements Runnable {
 		resume = new Button(SIZE.width / 2 - 250 / 2, 250, 250, 100, colour.buttonColour, colour.buttonHoverColour, "Resume");
 		
 		grid = new Grid(boardSize, boardSize);
-		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE), new Tile(TileType.INVERTER, Direction.NORTH),
-				new Tile(TileType.POWER) };
+		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE),
+				new Tile(TileType.INVERTER, Direction.NORTH), new Tile(TileType.POWER) };
 		selectedTile = 0;
 		
 		savesDirectory = new File("saves");
@@ -150,6 +150,10 @@ public class Circuit extends JFrame implements Runnable {
 		g.setColor(colour.gray);
 		g.fillRect(0, 0, tileSize, tileSize * selectionGrid.length);
 		
+		//Selected tile background
+		g.setColor(colour.translucentYellow);
+		g.fillRect(0, selectedTile * tileSize, tileSize, tileSize);
+		
 		//Game board background
 		g.setColor(colour.darkGray);
 		g.fillRect(tileSize, 0, tileSize * grid.width, tileSize * grid.height);
@@ -163,9 +167,10 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		
 		//Hover tile 
-		if (hoverTileX > -1 && hoverTileX <= grid.width && hoverTileY > -1 && hoverTileY <= grid.height
-				&& grid.tiles[hoverTileY * grid.width + hoverTileX].type == TileType.BLANK) {
-			hoverTileType.render(hoverTileX * tileSize + tileSize, hoverTileY * tileSize + tileSize, g, colour);
+		if (hoverTileX > -1 && hoverTileX <= grid.width && hoverTileY > -1 && hoverTileY <= grid.height) {
+			if (grid.tiles[hoverTileY * grid.width + hoverTileX].type == TileType.BLANK) {
+				hoverTileType.render(hoverTileX * tileSize + tileSize, hoverTileY * tileSize + tileSize, g, colour);
+			}
 			g.setColor(new Color(20, 20, 20, 100));
 			g.fillRect(hoverTileX * tileSize + tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
 		}
@@ -213,11 +218,12 @@ public class Circuit extends JFrame implements Runnable {
 				g.setColor(new Color(25, 25, 25, 115));
 				g.fillRect(input.x + xoff - 5, input.y - 15 + yoff, 150, 67);
 				g.setColor(Color.WHITE);
-				g.drawString("powered: " + String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX].powered), input.x + xoff, input.y - 2
-						+ yoff);
-				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX].neighbours), input.x + xoff, input.y + 10 + yoff);
-				g.drawString("direction: " + grid.tiles[hoverTileY * grid.width + hoverTileX].direction.toString(), input.x + xoff, input.y + 22
-						+ yoff);
+				g.drawString("powered: " + String.valueOf(grid.tiles[hoverTileY * grid.width + hoverTileX].powered), input.x
+						+ xoff, input.y - 2 + yoff);
+				g.drawString(Arrays.toString(grid.tiles[hoverTileY * grid.width + hoverTileX].neighbours), input.x + xoff,
+						input.y + 10 + yoff);
+				g.drawString("direction: " + grid.tiles[hoverTileY * grid.width + hoverTileX].direction.toString(), input.x
+						+ xoff, input.y + 22 + yoff);
 				g.drawString("x: " + input.x + " y: " + input.y, input.x + xoff, input.y + 34 + yoff);
 				g.drawString("x: " + hoverTileX + " y: " + hoverTileY, input.x + xoff, input.y + 46 + yoff);
 			}
@@ -287,15 +293,14 @@ public class Circuit extends JFrame implements Runnable {
 	 *  @param direction - the direction from tile towards curTile
 	 *  @return Whether or not curTile connects to tile*/
 	private boolean connects(Tile curTile, Tile tile, Direction direction) {
-		if (tile.type == TileType.BLANK || tile.type == TileType.NULL || curTile.type == TileType.BLANK || curTile.type == TileType.NULL)
-			return false;
+		if (tile.type == TileType.BLANK || tile.type == TileType.NULL || curTile.type == TileType.BLANK
+				|| curTile.type == TileType.NULL) return false;
 		switch (curTile.type) {
 		case INVERTER:
 			if (direction != curTile.direction && direction != curTile.direction.opposite()) return false; //Must be either in front, or behind us to affect us
 			switch (tile.type) {
 			case INVERTER:
-				if (tile.direction == curTile.direction || tile.direction == curTile.direction.opposite()) return (curTile.direction == tile.direction || curTile.direction == tile.direction
-						.opposite()); //Inverters only connect if they're facing the same way, or opposite ways
+				if (tile.direction == curTile.direction || tile.direction == curTile.direction.opposite()) return curTile.direction == tile.direction; //Inverters only connect if they're facing the same way
 				else return false;
 			case WIRE:
 				if (curTile.direction == direction) return true; //the wire is on the input side of the inverter
@@ -334,52 +339,40 @@ public class Circuit extends JFrame implements Runnable {
 	private void resetPower() {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				Tile north = getTileAt(x, y - 1);
-				Tile south = getTileAt(x, y + 1);
-				Tile east = getTileAt(x + 1, y);
-				Tile west = getTileAt(x - 1, y);
-				
-				switch (grid.tiles[y * grid.width + x].type) {
-				case BLANK:
-				case NULL:
-					continue;
-				case INVERTER:
+				if (grid.tiles[y * grid.width + x].type == TileType.INVERTER) {
+					Tile t = new Tile(TileType.NULL);
 					switch (grid.tiles[y * grid.width + x].direction) {
 					case NORTH:
-						if (south.type != TileType.NULL) {
-							if (south.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !south.powered;
-							else grid.tiles[y * grid.width + x].powered = south.powered;
-						}
+						t = getTileAt(x, y + 1);
 						break;
 					case EAST:
-						if (west.type != TileType.NULL) {
-							if (west.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !west.powered;
-							else grid.tiles[y * grid.width + x].powered = west.powered;
-						}
+						t = getTileAt(x - 1, y);
 						break;
 					case SOUTH:
-						if (north.type != TileType.NULL) {
-							if (north.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !north.powered;
-							else grid.tiles[y * grid.width + x].powered = north.powered;
-						}
+						t = getTileAt(x, y - 1);
 						break;
 					case WEST:
-						if (east.type != TileType.NULL) {
-							if (east.type == TileType.INVERTER) grid.tiles[y * grid.width + x].powered = !east.powered;
-							else grid.tiles[y * grid.width + x].powered = east.powered;
-						}
+						t = getTileAt(x + 1, y);
 						break;
 					default:
-						new IllegalStateException("Inverter tile has invalid direction: " + grid.tiles[y * grid.width + x].direction + " @ x: " + x
-								+ ",y: " + y).printStackTrace();
+						new IllegalStateException("Inverter tile has invalid direction: "
+								+ grid.tiles[y * grid.width + x].direction + " @ x: " + x + ",y: " + y).printStackTrace();
+					}
+					
+					if (t.type != TileType.NULL) {
+						if (t.type == TileType.INVERTER && t.direction == grid.tiles[y * grid.width + x].direction) grid.tiles[y
+								* grid.width + x].powered = !t.powered;
+						else grid.tiles[y * grid.width + x].powered = t.powered;
 					}
 					break;
-				case WIRE:
-					grid.tiles[y * grid.width + x].powered = false;
-					break;
-				case POWER: //Power tiles don't need updating
-					break;
 				}
+			}
+		}
+		
+		for (int y = 0; y < grid.height; y++) {
+			for (int x = 0; x < grid.width; x++) {
+				Tile t = getTileAt(x, y);
+				if (t.type == TileType.WIRE) grid.tiles[y * grid.width + x].powered = false;
 			}
 		}
 	}
@@ -441,17 +434,19 @@ public class Circuit extends JFrame implements Runnable {
 		else if (direction == 1) d = Direction.EAST;
 		else if (direction == 2) d = Direction.SOUTH;
 		else if (direction == 3) d = Direction.WEST;
-		else new IllegalArgumentException("Illegal direction passed to checkDirection: " + direction + " @ x: " + x + ", y: " + y).printStackTrace();
+		else new IllegalArgumentException("Illegal direction passed to checkDirection: " + direction + " @ x: " + x + ", y: " + y)
+				.printStackTrace();
 		
-		if (t.neighbours[direction] && comingFrom != d) {
-			if (getTileAt(x + xoff, y + yoff).type != TileType.NULL) {
-				if (getTileAt(x + xoff, y + yoff).type == TileType.INVERTER) {
-					if (getTileAt(x + xoff, y + yoff).direction == comingFrom.opposite()) {
+		if (t.neighbours[direction] && !comingFrom.equals(d)) {
+			Tile n = getTileAt(x + xoff, y + yoff);
+			if (n.type != TileType.NULL) {
+				if (n.type == TileType.INVERTER) {
+					if (n.direction == comingFrom.opposite()) {
 						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
 					} else {
 						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = false;
 					}
-				} else if (getTileAt(x + xoff, y + yoff).type == TileType.POWER) return;
+				} else if (n.type == TileType.POWER) return;
 				else grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
 				
 				floodFillAllExcept(x + xoff, y + yoff, d.opposite());
@@ -478,6 +473,8 @@ public class Circuit extends JFrame implements Runnable {
 			resume.hover = true;
 			if (input.leftDown || input.rightDown) {
 				paused = false;
+				input.releaseAll(); //to prevent placing a tile when resuming the game
+				return;
 			}
 		} else resume.hover = false;
 		
@@ -550,10 +547,13 @@ public class Circuit extends JFrame implements Runnable {
 		if (help.mouseInBounds(input)) {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
-				JTextArea textArea = new JTextArea("Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
-						+ "-Left click to place/roatate objects on the grid.\r\n" + "-Right click to clear a spot on the grid.\r\n"
-						+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
-						+ "-Use the number keys to quickly select different tile types.\r\n" + "-Hit esc to pause/unpause");
+				JTextArea textArea = new JTextArea(
+						"Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
+								+ "-Left click to place/roatate objects on the grid.\r\n"
+								+ "-Right click to clear a spot on the grid.\r\n"
+								+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
+								+ "-Use the number keys to quickly select different tile types.\r\n"
+								+ "-Hit esc to pause/unpause");
 				textArea.setEditable(false);
 				textArea.setColumns(25);
 				textArea.setRows(60);
@@ -632,9 +632,8 @@ public class Circuit extends JFrame implements Runnable {
 			File save = chooser.getSelectedFile().getAbsoluteFile();
 			if (save.exists()) {
 				int i = 0;
-				if ((i = JOptionPane.showConfirmDialog(null,
-						chooser.getSelectedFile().getName() + " already exists! Would you like to overwrite it?", "File exists",
-						JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
+				if ((i = JOptionPane.showConfirmDialog(null, chooser.getSelectedFile().getName()
+						+ " already exists! Would you like to overwrite it?", "File exists", JOptionPane.YES_NO_OPTION)) == JOptionPane.YES_OPTION) {
 					save.delete();
 				} else if (i == JOptionPane.NO_OPTION) return;
 			}

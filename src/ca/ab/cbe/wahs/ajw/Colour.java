@@ -9,6 +9,7 @@ public class Colour {
 	public Color lightGray = new Color(165, 175, 175);
 	public Color darkRed = new Color(155, 45, 45);
 	public Color lightRed = new Color(210, 60, 60);
+	public Color translucentYellow = new Color(200, 200, 30, 60);
 	
 	public Color buttonColour = new Color(70, 70, 70);
 	public Color buttonHoverColour = new Color(90, 90, 90);
