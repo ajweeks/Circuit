@@ -213,9 +213,9 @@ public class Circuit extends JFrame implements Runnable {
 		quit.render(g, font12, 10, 15);
 		
 		if (!paused) {
-			renderButtonHoverText(saveGame, "(crtl-s)", g, 45, 16);
-			renderButtonHoverText(loadGame, "(crtl-o)", g, 45, 16);
-			renderButtonHoverText(quit, "(crtl-q)", g, 45, 16);
+			saveGame.renderButtonHoverText("(crtl-s)", g, 45, 16, input);
+			loadGame.renderButtonHoverText("(crtl-o)", g, 45, 16, input);
+			quit.renderButtonHoverText("(crtl-q)", g, 45, 16, input);
 		}
 		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
 			
@@ -253,19 +253,12 @@ public class Circuit extends JFrame implements Runnable {
 			g.drawString("PAUSED", (canvas.getWidth() / 2) - (getFontMetrics(g.getFont()).stringWidth("PAUSED") / 2), 200);
 			
 			resume.render(g, font36.deriveFont(30f), 70, 55);
-			renderButtonHoverText(resume, "(esc)", g, 92, 85);
+			resume.renderButtonHoverText("(esc)", g, 92, 85, input);
 		}
 		
 		g.dispose();
 		buffer.show();
 		frames++;
-	}
-	
-	private void renderButtonHoverText(Button button, String text, Graphics g, int xoff, int yoff) {
-		if (input.x > button.x && input.x < button.x + button.width && input.y > button.y && input.y < button.y + button.height) {
-			g.setColor(new Color(230, 230, 230, 230)); //translucent off white
-			g.drawString(text, button.x + xoff, button.y + yoff);
-		}
 	}
 	
 	private int ticks = 0;
