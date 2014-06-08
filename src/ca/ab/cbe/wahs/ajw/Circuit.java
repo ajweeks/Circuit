@@ -56,7 +56,7 @@ public class Circuit extends JFrame implements Runnable {
 	private Grid grid; //Main game board (width & height = boardSize)
 	
 	protected static Image inverterN_ON = new ImageIcon("res/inverterN_ON.png").getImage();
-	protected static Image inverterN_OFF = new ImageIcon("res/inverterN_ON.png").getImage();
+	protected static Image inverterN_OFF = new ImageIcon("res/inverterN_OFF.png").getImage();
 	protected static Image inverterE_ON = new ImageIcon("res/inverterE_ON.png").getImage();
 	protected static Image inverterE_OFF = new ImageIcon("res/inverterE_OFF.png").getImage();
 	protected static Image inverterS_ON = new ImageIcon("res/inverterS_ON.png").getImage();
@@ -66,6 +66,7 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private int fps = 0;
 	private int frames = 0;
+	private int ticks = 0;
 	
 	public Circuit() {
 		super("Circuit");
@@ -79,6 +80,7 @@ public class Circuit extends JFrame implements Runnable {
 		loadGame = new Button(695, 95, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Load");
 		help = new Button(695, 125, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Help");
 		quit = new Button(695, 155, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Quit");
+		
 		resume = new Button(SIZE.width / 2 - 250 / 2, 250, 250, 100, colour.buttonColour, colour.buttonHoverColour, "Resume");
 		
 		grid = new Grid(boardSize, boardSize);
@@ -135,7 +137,7 @@ public class Circuit extends JFrame implements Runnable {
 	private void render() {
 		BufferStrategy buffer = canvas.getBufferStrategy();
 		if (buffer == null) {
-			canvas.createBufferStrategy(2);
+			canvas.createBufferStrategy(3);
 			return;
 		}
 		Graphics g = buffer.getDrawGraphics();
@@ -217,7 +219,8 @@ public class Circuit extends JFrame implements Runnable {
 			loadGame.renderButtonHoverText("(crtl-o)", g, 45, 16, input);
 			quit.renderButtonHoverText("(crtl-q)", g, 45, 16, input);
 		}
-		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window
+		
+		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window (unless we're debugging)
 			
 		if (DEBUG) {
 			g.setColor(Color.BLACK);
@@ -261,13 +264,11 @@ public class Circuit extends JFrame implements Runnable {
 		frames++;
 	}
 	
-	private int ticks = 0;
-	
 	private void update() {
 		if (paused) return;
 		updateConnections();
 		ticks++;
-		if (ticks < 5) return;
+		if (ticks < 8) return;
 		ticks = 0;
 		resetPower();
 		floodFillGrid();
@@ -367,11 +368,12 @@ public class Circuit extends JFrame implements Runnable {
 					}
 					
 					if (t.type != TileType.NULL) {
-						if (t.type == TileType.INVERTER && t.direction == grid.tiles[y * grid.width + x].direction) grid.tiles[y
-								* grid.width + x].powered = !t.powered;
-						else grid.tiles[y * grid.width + x].powered = t.powered;
+						if (t.type == TileType.INVERTER && t.direction == grid.tiles[y * grid.width + x].direction) {
+							grid.tiles[y * grid.width + x].powered = !t.powered;
+						} else {
+							grid.tiles[y * grid.width + x].powered = t.powered;
+						}
 					}
-					break;
 				}
 			}
 		}
@@ -448,7 +450,7 @@ public class Circuit extends JFrame implements Runnable {
 			Tile n = getTileAt(x + xoff, y + yoff);
 			if (n.type != TileType.NULL) {
 				if (n.type == TileType.INVERTER) {
-					if (n.direction == comingFrom.opposite()) {
+					if (n.direction == d) { //oohhh
 						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
 					} else {
 						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = false;

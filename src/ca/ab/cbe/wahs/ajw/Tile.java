@@ -58,6 +58,7 @@ public class Tile implements Serializable {
 			case NORTH:
 				if (this.powered) g.drawImage(Circuit.inverterN_ON, x, y - tileSize, null);
 				else g.drawImage(Circuit.inverterN_OFF, x, y - tileSize, null);
+				
 				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
 				if (this.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2 - 5); //N
 				g.setColor(this.powered ? colour.lightRed : colour.darkRed);

@@ -16,7 +16,6 @@ public enum Direction implements Serializable {
 		case WEST:
 			return EAST;
 		case NONE:
-			return NONE;
 		default:
 			System.err.println("Invalid direction passed to opposite, " + this.toString());
 			return NONE;
