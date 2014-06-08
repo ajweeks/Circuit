@@ -11,8 +11,8 @@ public class Colour {
 	public Color lightRed = new Color(210, 60, 60);
 	public Color translucentYellow = new Color(200, 200, 30, 60);
 	
-	public Color buttonColour = new Color(70, 70, 70);
-	public Color buttonHoverColour = new Color(90, 90, 90);
+	public Color buttonColour = new Color(35, 45, 45);
+	public Color buttonHoverColour = buttonColour.brighter();
 	
 	public Color translucentGray = new Color(65, 75, 75, 160);
 }
