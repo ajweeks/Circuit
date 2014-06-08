@@ -26,10 +26,14 @@ public class Button {
 	}
 	
 	public void render(Graphics g, Font font, int xoff, int yoff) {
-		if (this.hover) g.setColor(this.hoverColour);
-		else g.setColor(this.colour);
 		
-		g.fillRect(this.x, this.y, this.width, this.height);
+		if (this.hover) {
+			g.setColor(this.hoverColour);
+			g.fillRect(this.x + 1, this.y + 1, this.width, this.height);
+		} else {
+			g.setColor(this.colour);
+			g.fillRect(this.x, this.y, this.width, this.height);
+		}
 		
 		g.setFont(font);
 		g.setColor(Color.WHITE);

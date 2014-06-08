@@ -150,6 +150,10 @@ public class Circuit extends JFrame implements Runnable {
 		g.setColor(colour.gray);
 		g.fillRect(0, 0, tileSize, tileSize * selectionGrid.length);
 		
+		//Extra tiles selection background
+		g.setColor(colour.lightGray);
+		g.fillRect(0, selectionGrid.length * tileSize, tileSize, (tileSize * grid.height) - (selectedTile * tileSize));
+		
 		//Selected tile background
 		g.setColor(colour.translucentYellow);
 		g.fillRect(0, selectedTile * tileSize, tileSize, tileSize);
@@ -158,12 +162,22 @@ public class Circuit extends JFrame implements Runnable {
 		g.setColor(colour.darkGray);
 		g.fillRect(tileSize, 0, tileSize * grid.width, tileSize * grid.height);
 		
+		//Button area background
+		g.setColor(colour.lightGray);
+		g.fillRect(tileSize * grid.width + tileSize + 1, 0, SIZE.width - (tileSize * grid.width), tileSize * grid.height);
+		
 		//Main game board grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width + 1; x++) {
 				g.setColor(colour.lightGray);
 				g.drawRect(x * tileSize, y * tileSize, tileSize, tileSize);
 			}
+		}
+		
+		//Tile selection grid
+		for (int y = 0; y < grid.height; y++) {
+			g.setColor(Color.BLACK);
+			g.drawRect(0, y * tileSize, tileSize, tileSize);
 		}
 		
 		//Hover tile 
