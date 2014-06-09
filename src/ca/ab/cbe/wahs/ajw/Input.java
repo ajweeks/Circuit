@@ -7,6 +7,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
+import javax.swing.SwingUtilities;
+
 public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	
 	public int x, y; //X and Y coordinates of the user's mouse on screen
@@ -112,8 +114,8 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public void mouseDragged(MouseEvent e) {
 		x = e.getX();
 		y = e.getY();
-		//TODO add right click-ctrl dragging
-		if (e.isControlDown()) leftDown = true;
+		if(SwingUtilities.isLeftMouseButton(e) && e.isControlDown()) leftDown = true;
+		if (SwingUtilities.isRightMouseButton(e) && e.isControlDown()) rightDown = true;
 	}
 	
 	public void keyReleased(KeyEvent e) {}

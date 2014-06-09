@@ -6,6 +6,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
 import java.io.File;
 import java.io.FileInputStream;
@@ -67,6 +69,7 @@ public class Circuit extends JFrame implements Runnable {
 	private int fps = 0;
 	private int frames = 0;
 	private int ticks = 0;
+	private boolean saved = true;
 	
 	public Circuit() {
 		super("Circuit");
@@ -101,13 +104,44 @@ public class Circuit extends JFrame implements Runnable {
 		canvas.setFocusable(true);
 		canvas.requestFocus();
 		
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		addWindowListener(new WindowListener() {
+			public void windowClosing(WindowEvent e) {
+				exit();
+			}
+			
+			public void windowOpened(WindowEvent e) {}
+			
+			public void windowIconified(WindowEvent e) {}
+			
+			public void windowDeiconified(WindowEvent e) {}
+			
+			public void windowDeactivated(WindowEvent e) {}
+			
+			public void windowClosed(WindowEvent e) {}
+			
+			public void windowActivated(WindowEvent e) {}
+		});
 		add(canvas);
 		pack();
 		setLocationRelativeTo(null);
 		setResizable(false);
 		setIconImage(icon);
 		setVisible(true);
+	}
+	
+	private void exit() {
+		if (!saved) {
+			if (JOptionPane.showConfirmDialog(null, "Warning! You haven't saved! Quit anyway?", "Unsaved Work!",
+					JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
+				if (!running) {
+					running = true;
+					loop();
+				}
+				return;
+			}
+		}
+		System.exit(0);
 	}
 	
 	private void loop() {
@@ -130,8 +164,7 @@ public class Circuit extends JFrame implements Runnable {
 			}
 			before = System.currentTimeMillis();
 		}
-		dispose();
-		System.exit(0);
+		exit();
 	}
 	
 	private void render() {
@@ -450,13 +483,16 @@ public class Circuit extends JFrame implements Runnable {
 			Tile n = getTileAt(x + xoff, y + yoff);
 			if (n.type != TileType.NULL) {
 				if (n.type == TileType.INVERTER) {
-					if (n.direction == d) { //oohhh
+					if (n.direction == d) {
 						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
 					} else {
 						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = false;
 					}
-				} else if (n.type == TileType.POWER) return;
-				else grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
+				} else if (n.type == TileType.POWER) {
+					return;
+				} else {
+					grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
+				}
 				
 				floodFillAllExcept(x + xoff, y + yoff, d.opposite());
 			}
@@ -594,6 +630,7 @@ public class Circuit extends JFrame implements Runnable {
 	 *  @param y - the y coordinate of the tile currently under the mouse  */
 	private void updateGridWithInput(int x, int y) {
 		if (input.leftDown) { //Left click in game board or tile selection area
+			if (saved) saved = false;
 			if (x == -1) { //Mouse is in leftmost column (tile selection area)
 				if (y + 1 <= selectionGrid.length) selectedTile = y; //Check if the selected tile has a tile to select
 			} else { //Click in the game board
@@ -613,6 +650,7 @@ public class Circuit extends JFrame implements Runnable {
 				}
 			}
 		} else if (input.rightDown && x >= -1 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
+			if (saved) saved = false;
 			grid.tiles[y * grid.width + x] = Tile.newBlankTile();
 		}
 	}
@@ -633,10 +671,7 @@ public class Circuit extends JFrame implements Runnable {
 		chooser.setSelectedFile(new File("save.ser"));
 		if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
 			if (!chooser.getSelectedFile().getName().endsWith(".ser")) {
-				JOptionPane.showMessageDialog(null, "Must be saved as a .ser file! Please try again.", "Invalid file type!",
-						JOptionPane.DEFAULT_OPTION);
-				chooser.getSelectedFile().delete();
-				return;
+				chooser.setSelectedFile(new File(savesDirectory.getName() + "/" + chooser.getSelectedFile().getName() + ".ser"));
 			}
 			File save = chooser.getSelectedFile().getAbsoluteFile();
 			if (save.exists()) {
@@ -651,6 +686,7 @@ public class Circuit extends JFrame implements Runnable {
 				ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(save.getAbsoluteFile()));
 				out.writeObject(grid);
 				out.close();
+				saved = true;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -681,6 +717,7 @@ public class Circuit extends JFrame implements Runnable {
 					Grid newGrid = new Grid(boardSize, boardSize);
 					newGrid = (Grid) in.readObject();
 					in.close();
+					saved = true;
 					grid = newGrid;
 				} else System.err.println("uhoh " + chooser.getSelectedFile().getAbsolutePath());
 			} catch (IOException | ClassNotFoundException e) {
