@@ -34,4 +34,11 @@ public class Grid implements Serializable {
 		return grid;
 	}
 	
+	public boolean isEmpty() {
+		for (int i = 0; i < this.width * this.height; i++) {
+			if (this.tiles[i].type != TileType.BLANK) return false;
+		}
+		return true;
+	}
+	
 }

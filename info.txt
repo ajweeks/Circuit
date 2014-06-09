@@ -10,14 +10,12 @@
 -inverter tiles have 4 neighbors, but only "care" about the ones that are in front and behind
 
 --TO DO LIST--
-!!-Fix lingering power which does not go away after the removal of a power source
-     -Maybe by "following" the power through each wire instead of just checking if neighbors are powered
--Update entire grid before rendering, to eliminate slow moving "electricity" from bottom right corner to top left corner
--Implement a burn out system to prevent endless loops of cpu-melting atrocities
 -Get rid of extra inverter sprites, instead use code to rotate them
 -Fix white box rendering when a save or load window is opened
 
 --COMPLETED ITEMS--
+-Fix lingering power which does not go away after the removal of a power source
+-Update entire grid before rendering, to eliminate slow moving "electricity" from bottom right corner to top left corner
 -Fix wire auto-connection issues
 -Fix saving / loading the board 
 -Make inverters have four directions, and only allow current to pass through one direction

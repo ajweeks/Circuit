@@ -132,7 +132,7 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private void exit() {
-		if (!saved) {
+		if (!saved && !grid.isEmpty()) {
 			if (JOptionPane.showConfirmDialog(null, "Warning! You haven't saved! Quit anyway?", "Unsaved Work!",
 					JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) {
 				if (!running) {
@@ -150,7 +150,9 @@ public class Circuit extends JFrame implements Runnable {
 		long seconds = 0;
 		while (running) {
 			pollInput();
-			update();
+			for (int i = 0; i < 18; i++) {
+				update();
+			}
 			render();
 			try {
 				Thread.sleep(1000 / 60); //60 updates / second (ish)
@@ -302,14 +304,14 @@ public class Circuit extends JFrame implements Runnable {
 		if (paused) return;
 		updateConnections();
 		ticks++;
-		if (ticks < 8) return;
+		if (ticks < 18) return;
 		ticks = 0;
 		resetPower();
 		floodFillGrid();
 		
 		if (getTitle().equals(GAME_TITLE)) {
-			if (!saved) setTitle(GAME_TITLE + " *");
-		} else if(saved) setTitle(GAME_TITLE);
+			if (!saved) setTitle("*" + GAME_TITLE);
+		} else if (saved) setTitle(GAME_TITLE);
 	}
 	
 	private void updateConnections() {
@@ -485,15 +487,9 @@ public class Circuit extends JFrame implements Runnable {
 				.printStackTrace();
 		
 		if (t.neighbours[direction] && !comingFrom.equals(d)) {
-			Tile n = getTileAt(x + xoff, y + yoff);
+			Tile n = getTileAt(x + xoff, y + yoff); //neighbour towards Direction d
 			if (n.type != TileType.NULL) {
-				if (n.type == TileType.INVERTER) {
-					if (n.direction == d) {
-						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
-					} else {
-						grid.tiles[(y + yoff) * grid.width + x + xoff].powered = false;
-					}
-				} else if (n.type == TileType.POWER) {
+				if (n.type == TileType.INVERTER || n.type == TileType.POWER) {
 					return;
 				} else {
 					grid.tiles[(y + yoff) * grid.width + x + xoff].powered = true;
@@ -699,7 +695,10 @@ public class Circuit extends JFrame implements Runnable {
 	}
 	
 	private void loadBoard() {
-		//LATER add save check to prevent overwritten files
+		if (!saved && !grid.isEmpty()) {
+			if (JOptionPane.showConfirmDialog(null, "You haven't saved! All work will be lost! Continue?", "Unsaved Work!",
+					JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) return;
+		}
 		if (!savesDirectory.exists()) {
 			try {
 				savesDirectory.createNewFile();
