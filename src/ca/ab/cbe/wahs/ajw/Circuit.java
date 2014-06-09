@@ -52,7 +52,6 @@ public class Circuit extends JFrame implements Runnable {
 	private Canvas canvas;
 	private Tile[] selectionGrid;
 	private int selectedTile; //Index in selection grid of the current selected tile
-	private Colour colour;
 	private Input input;
 	private int hoverTileX, hoverTileY; //X and Y coordinates of the current tile under the mouse
 	private Tile hoverTileType = new Tile(TileType.BLANK);
@@ -75,17 +74,16 @@ public class Circuit extends JFrame implements Runnable {
 	public Circuit() {
 		super(GAME_TITLE);
 		
-		colour = new Colour();
 		font36 = new Font("Arial", Font.BOLD, 36);
 		font12 = new Font("Arial", Font.BOLD, 12);
 		
-		clearBoard = new Button(695, 35, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Clear Board");
-		saveGame = new Button(695, 65, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Save");
-		loadGame = new Button(695, 95, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Load");
-		help = new Button(695, 125, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Help");
-		quit = new Button(695, 155, 85, 25, colour.buttonColour, colour.buttonHoverColour, "Quit");
+		clearBoard = new Button(695, 35, 85, 25, Colour.buttonColour, Colour.buttonHoverColour, "Clear Board");
+		saveGame = new Button(695, 65, 85, 25, Colour.buttonColour, Colour.buttonHoverColour, "Save");
+		loadGame = new Button(695, 95, 85, 25, Colour.buttonColour, Colour.buttonHoverColour, "Load");
+		help = new Button(695, 125, 85, 25, Colour.buttonColour, Colour.buttonHoverColour, "Help");
+		quit = new Button(695, 155, 85, 25, Colour.buttonColour, Colour.buttonHoverColour, "Quit");
 		
-		resume = new Button(SIZE.width / 2 - 250 / 2, 250, 250, 100, colour.buttonColour, colour.buttonHoverColour, "Resume");
+		resume = new Button(SIZE.width / 2 - 250 / 2, 250, 250, 100, Colour.buttonColour, Colour.buttonHoverColour, "Resume");
 		
 		grid = new Grid(boardSize, boardSize);
 		selectionGrid = new Tile[] { new Tile(TileType.BLANK), new Tile(TileType.WIRE),
@@ -131,6 +129,7 @@ public class Circuit extends JFrame implements Runnable {
 		setVisible(true);
 	}
 	
+	/** To be called whenever the user requests the close of the application.<br/>Checks if the current game grid has been saved, and alerts the user if it hasn't. */
 	private void exit() {
 		if (!saved && !grid.isEmpty()) {
 			if (JOptionPane.showConfirmDialog(null, "Warning! You haven't saved! Quit anyway?", "Unsaved Work!",
@@ -150,7 +149,7 @@ public class Circuit extends JFrame implements Runnable {
 		long seconds = 0;
 		while (running) {
 			pollInput();
-			for (int i = 0; i < 18; i++) {
+			for (int i = 0; i < boardSize; i++) {
 				update();
 			}
 			render();
@@ -185,29 +184,29 @@ public class Circuit extends JFrame implements Runnable {
 		g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 		
 		//Tile selection background
-		g.setColor(colour.gray);
+		g.setColor(Colour.gray);
 		g.fillRect(0, 0, tileSize, tileSize * selectionGrid.length);
 		
 		//Extra tiles selection background
-		g.setColor(colour.lightGray);
+		g.setColor(Colour.lightGray);
 		g.fillRect(0, selectionGrid.length * tileSize, tileSize, (tileSize * grid.height) - (selectedTile * tileSize));
 		
 		//Selected tile background
-		g.setColor(colour.translucentYellow);
+		g.setColor(Colour.translucentYellow);
 		g.fillRect(0, selectedTile * tileSize, tileSize, tileSize);
 		
 		//Game board background
-		g.setColor(colour.darkGray);
+		g.setColor(Colour.darkGray);
 		g.fillRect(tileSize, 0, tileSize * grid.width, tileSize * grid.height);
 		
 		//Button area background
-		g.setColor(colour.lightGray);
+		g.setColor(Colour.lightGray);
 		g.fillRect(tileSize * grid.width + tileSize + 1, 0, SIZE.width - (tileSize * grid.width), tileSize * grid.height);
 		
 		//Main game board grid
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width + 1; x++) {
-				g.setColor(colour.lightGray);
+				g.setColor(Colour.lightGray);
 				g.drawRect(x * tileSize, y * tileSize, tileSize, tileSize);
 			}
 		}
@@ -221,7 +220,7 @@ public class Circuit extends JFrame implements Runnable {
 		//Hover tile 
 		if (hoverTileX > -1 && hoverTileX <= grid.width && hoverTileY > -1 && hoverTileY <= grid.height) {
 			if (grid.tiles[hoverTileY * grid.width + hoverTileX].type == TileType.BLANK) {
-				hoverTileType.render(hoverTileX * tileSize + tileSize, hoverTileY * tileSize + tileSize, g, colour);
+				hoverTileType.render(hoverTileX * tileSize + tileSize, hoverTileY * tileSize + tileSize, g);
 			}
 			g.setColor(new Color(20, 20, 20, 100));
 			g.fillRect(hoverTileX * tileSize + tileSize + 1, hoverTileY * tileSize + 1, tileSize - 1, tileSize - 1);
@@ -230,7 +229,7 @@ public class Circuit extends JFrame implements Runnable {
 		//Main game board tiles
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
-				grid.tiles[y * grid.width + x].render(x * tileSize + tileSize, y * tileSize + tileSize, g, colour);
+				grid.tiles[y * grid.width + x].render(x * tileSize + tileSize, y * tileSize + tileSize, g);
 			}
 		}
 		
@@ -240,7 +239,14 @@ public class Circuit extends JFrame implements Runnable {
 		
 		//Selection tiles
 		for (int y = 0; y < selectionGrid.length; y++) {
-			selectionGrid[y].render(0, (y + 1) * tileSize, g, colour);
+			selectionGrid[y].render(0, (y + 1) * tileSize, g);
+		}
+		
+		//Selection tiles numbers
+		for (int y = 0; y < selectionGrid.length + 1; y++) {
+			g.setColor(Colour.translucentGray);
+			g.setFont(font12);
+			g.drawString(Integer.toString(y - 1), 28, y * tileSize - 1);
 		}
 		
 		//Buttons
@@ -255,6 +261,8 @@ public class Circuit extends JFrame implements Runnable {
 			loadGame.renderButtonHoverText("(crtl-o)", g, 45, 16, input);
 			quit.renderButtonHoverText("(crtl-q)", g, 45, 16, input);
 		}
+		
+		if (input.x / tileSize == 0) renderSelectionTileText(g);
 		
 		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window (unless we're debugging)
 			
@@ -284,7 +292,7 @@ public class Circuit extends JFrame implements Runnable {
 		
 		if (paused) {
 			//Translucent gray over entire screen
-			g.setColor(colour.translucentGray);
+			g.setColor(Colour.translucentGray);
 			g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 			
 			g.setFont(font36);
@@ -300,11 +308,45 @@ public class Circuit extends JFrame implements Runnable {
 		frames++;
 	}
 	
+	private void renderSelectionTileText(Graphics g) {
+		int i = input.y / tileSize;
+		switch (i) {
+		case 0:
+			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
+				g.setColor(Color.WHITE);
+				g.setFont(font12);
+				g.drawString("Blank", input.x, input.y);
+			}
+			break;
+		case 1:
+			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
+				g.setColor(Color.WHITE);
+				g.setFont(font12);
+				g.drawString("Wire", input.x, input.y);
+			}
+			break;
+		case 2:
+			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
+				g.setColor(Color.WHITE);
+				g.setFont(font12);
+				g.drawString("Inverter", input.x, input.y);
+			}
+			break;
+		case 3:
+			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
+				g.setColor(Color.WHITE);
+				g.setFont(font12);
+				g.drawString("Power", input.x, input.y);
+			}
+			break;
+		}
+	}
+	
 	private void update() {
 		if (paused) return;
 		updateConnections();
 		ticks++;
-		if (ticks < 18) return;
+		if (ticks < 12) return;
 		ticks = 0;
 		resetPower();
 		floodFillGrid();
@@ -384,6 +426,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
+	/** Sets all inverters' power state to whatever the tile on their input side is <br/>Then sets all wires' power state to off */
 	private void resetPower() {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
@@ -426,6 +469,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
+	/** Calls floodFillAllExcept on every power source in the grid */
 	private void floodFillGrid() {
 		for (int y = 0; y < grid.height; y++) {
 			for (int x = 0; x < grid.width; x++) {
@@ -437,7 +481,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 	}
 	
-	/** Calls floodfill on all this tile's neighbours (except the one towards direction comingFrom). <br/> If you want to update all neighbours, pass Direction.NONE */
+	/** Calls floodFill on all this tile's neighbours (except the one towards direction comingFrom). */
 	private void floodFillAllExcept(int x, int y, Direction comingFrom) {
 		if (getTileAt(x, y).type == TileType.INVERTER) { //Inverters only power one direction
 			if (getTileAt(x, y).powered) return;
@@ -577,6 +621,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (saveGame.mouseInBounds(input)) {
 			saveGame.hover = true;
 			if (input.leftDown || input.rightDown) {
+				input.releaseAll();
 				saveBoard();
 			}
 		} else saveGame.hover = false;
@@ -585,6 +630,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (loadGame.mouseInBounds(input)) {
 			loadGame.hover = true;
 			if (input.leftDown || input.rightDown) {
+				input.releaseAll();
 				loadBoard();
 			}
 		} else loadGame.hover = false;
@@ -593,6 +639,7 @@ public class Circuit extends JFrame implements Runnable {
 		if (help.mouseInBounds(input)) {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
+				input.releaseAll();
 				JTextArea textArea = new JTextArea(
 						"Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
 								+ "-Left click to place/roatate objects on the grid.\r\n"
@@ -631,10 +678,12 @@ public class Circuit extends JFrame implements Runnable {
 	 *  @param y - the y coordinate of the tile currently under the mouse  */
 	private void updateGridWithInput(int x, int y) {
 		if (input.leftDown) { //Left click in game board or tile selection area
-			if (saved) saved = false;
 			if (x == -1) { //Mouse is in leftmost column (tile selection area)
-				if (y + 1 <= selectionGrid.length) selectedTile = y; //Check if the selected tile has a tile to select
+				if (y + 1 <= selectionGrid.length) {
+					selectedTile = y; //Check if the selected tile has a tile to select
+				}
 			} else { //Click in the game board
+				if (saved) saved = false;
 				if (grid.tiles[y * grid.width + x].type != selectionGrid[selectedTile].type) { //If the tile not the selected tile
 					grid.tiles[y * grid.width + x] = selectionGrid[selectedTile].copy();
 				} else { //The selected tile is the same type as the tile being clicked, so rotate it

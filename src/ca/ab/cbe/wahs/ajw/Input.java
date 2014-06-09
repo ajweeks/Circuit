@@ -114,7 +114,7 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	public void mouseDragged(MouseEvent e) {
 		x = e.getX();
 		y = e.getY();
-		if(SwingUtilities.isLeftMouseButton(e) && e.isControlDown()) leftDown = true;
+		if (SwingUtilities.isLeftMouseButton(e) && e.isControlDown()) leftDown = true;
 		if (SwingUtilities.isRightMouseButton(e) && e.isControlDown()) rightDown = true;
 	}
 	

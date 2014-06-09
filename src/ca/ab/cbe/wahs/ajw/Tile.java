@@ -38,8 +38,8 @@ public class Tile implements Serializable {
 	/** @param y - x position on screen
 	    @param x - y position on screen
 	     */
-	public void render(int x, int y, Graphics g, Colour colour) {
-		g.setColor(this.powered ? colour.lightRed : colour.darkRed);
+	public void render(int x, int y, Graphics g) {
+		g.setColor(this.powered ? Colour.lightRed : Colour.darkRed);
 		
 		switch (this.type) {
 		case WIRE:
@@ -59,45 +59,46 @@ public class Tile implements Serializable {
 				if (this.powered) g.drawImage(Circuit.inverterN_ON, x, y - tileSize, null);
 				else g.drawImage(Circuit.inverterN_OFF, x, y - tileSize, null);
 				
-				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
+				g.setColor(this.powered ? Colour.darkRed : Colour.lightRed);
 				if (this.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2 - 5); //N
-				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
+				g.setColor(this.powered ? Colour.lightRed : Colour.darkRed);
 				if (this.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2), 5, tileSize / 2); //S
 				break;
 			case EAST:
 				if (this.powered) g.drawImage(Circuit.inverterE_ON, x, y - tileSize, null);
 				else g.drawImage(Circuit.inverterE_OFF, x, y - tileSize, null);
 				
-				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
+				g.setColor(this.powered ? Colour.darkRed : Colour.lightRed);
 				if (this.neighbours[1]) g.fillRect(x + (tileSize / 2) + 4, y - (tileSize / 2) - 1, (tileSize / 2) - 4, 5); //E
-				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
+				g.setColor(this.powered ? Colour.lightRed : Colour.darkRed);
 				if (this.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //W
 				break;
 			case SOUTH:
 				if (this.powered) g.drawImage(Circuit.inverterS_ON, x, y - tileSize, null);
 				else g.drawImage(Circuit.inverterS_OFF, x, y - tileSize, null);
 				
-				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
+				g.setColor(this.powered ? Colour.lightRed : Colour.darkRed);
 				if (this.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
-				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
+				g.setColor(this.powered ? Colour.darkRed : Colour.lightRed);
 				if (this.neighbours[2]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) + 5, 5, tileSize / 2 - 5); //S
 				break;
 			case WEST:
 				if (this.powered) g.drawImage(Circuit.inverterW_ON, x, y - tileSize, null);
 				else g.drawImage(Circuit.inverterW_OFF, x, y - tileSize, null);
 				
-				g.setColor(this.powered ? colour.lightRed : colour.darkRed);
+				g.setColor(this.powered ? Colour.lightRed : Colour.darkRed);
 				if (this.neighbours[1]) g.fillRect(x + (tileSize / 2) - 1, y - (tileSize / 2) - 1, (tileSize / 2) + 1, 5); //E
-				g.setColor(this.powered ? colour.darkRed : colour.lightRed);
+				g.setColor(this.powered ? Colour.darkRed : Colour.lightRed);
 				if (this.neighbours[3]) g.fillRect(x, y - (tileSize / 2) - 1, (tileSize / 2) - 5, 5); //W
 				break;
 			default:
-				new IllegalStateException("Inverter has an illegal direction: " + direction + " @ x:" + x + ",y: " + y).printStackTrace();
+				new IllegalStateException("Inverter has an illegal direction: " + direction + " @ x:" + x + ",y: " + y)
+						.printStackTrace();
 				return;
 			}
 			break;
 		case POWER:
-			g.setColor(this.powered ? colour.lightRed : colour.darkRed);
+			g.setColor(this.powered ? Colour.lightRed : Colour.darkRed);
 			g.fillOval(x + (tileSize / 2) - 5, y - (tileSize / 2) - 6, (tileSize / 3), (tileSize / 3));
 			
 			if (this.neighbours[0]) g.fillRect(x + (tileSize / 2) - 1, y - tileSize, 5, tileSize / 2); //N
