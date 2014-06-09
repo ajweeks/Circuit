@@ -27,6 +27,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
+	public static final String GAME_TITLE = "Circuit";
 	
 	public static boolean DEBUG = true;
 	
@@ -72,7 +73,7 @@ public class Circuit extends JFrame implements Runnable {
 	private boolean saved = true;
 	
 	public Circuit() {
-		super("Circuit");
+		super(GAME_TITLE);
 		
 		colour = new Colour();
 		font36 = new Font("Arial", Font.BOLD, 36);
@@ -305,6 +306,10 @@ public class Circuit extends JFrame implements Runnable {
 		ticks = 0;
 		resetPower();
 		floodFillGrid();
+		
+		if (getTitle().equals(GAME_TITLE)) {
+			if (!saved) setTitle(GAME_TITLE + " *");
+		} else if(saved) setTitle(GAME_TITLE);
 	}
 	
 	private void updateConnections() {
