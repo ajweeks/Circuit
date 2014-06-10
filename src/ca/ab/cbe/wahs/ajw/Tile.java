@@ -111,7 +111,6 @@ public class Tile implements Serializable {
 		}
 	}
 	
-	/** @return The direction of the tile at <b>grid[y][x]</b> rotated clockwise once */
 	public static Direction rotateCW(Grid grid, int x, int y) {
 		switch (grid.tiles[y * grid.width + x].direction) {
 		case NORTH:

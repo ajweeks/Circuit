@@ -18,18 +18,18 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
 import javax.swing.ImageIcon;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JTextArea;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+/** Copyright (c) 2014 AJ Weeks. All rights reserved. */
 
 public class Circuit extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 	public static final String GAME_TITLE = "Circuit";
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	
 	public static final Dimension SIZE = new Dimension(780, 639);
 	public static int boardSize = 18; //Number of tiles wide and tall the board is
@@ -129,7 +129,7 @@ public class Circuit extends JFrame implements Runnable {
 		setVisible(true);
 	}
 	
-	/** To be called whenever the user requests the close of the application.<br/>Checks if the current game grid has been saved, and alerts the user if it hasn't. */
+	/** Checks if the current game grid has been saved, and alerts the user if it hasn't.<br/> To be called whenever the user requests the close of the application. */
 	private void exit() {
 		if (!saved && !grid.isEmpty()) {
 			if (JOptionPane.showConfirmDialog(null, "Warning! You haven't saved! Quit anyway?", "Unsaved Work!",
@@ -149,9 +149,7 @@ public class Circuit extends JFrame implements Runnable {
 		long seconds = 0;
 		while (running) {
 			pollInput();
-			for (int i = 0; i < boardSize; i++) {
-				update();
-			}
+			update();
 			render();
 			try {
 				Thread.sleep(1000 / 60); //60 updates / second (ish)
@@ -310,32 +308,33 @@ public class Circuit extends JFrame implements Runnable {
 	
 	private void renderSelectionTileText(Graphics g) {
 		int i = input.y / tileSize;
+		
+		if (!input.mouseOnScreen || paused) return;
+		
+		if (i == selectedTile) g.setColor(new Color(60, 250, 60));
+		else g.setColor(Color.WHITE);
+		g.setFont(font12);
+		
 		switch (i) {
 		case 0:
 			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
-				g.setColor(Color.WHITE);
-				g.setFont(font12);
-				g.drawString("Blank", input.x, input.y);
+				int yoff = 0;
+				if (input.y < 10) yoff = 30;
+				g.drawString("Blank", input.x, input.y + yoff);
 			}
 			break;
 		case 1:
 			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
-				g.setColor(Color.WHITE);
-				g.setFont(font12);
 				g.drawString("Wire", input.x, input.y);
 			}
 			break;
 		case 2:
 			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
-				g.setColor(Color.WHITE);
-				g.setFont(font12);
 				g.drawString("Inverter", input.x, input.y);
 			}
 			break;
 		case 3:
 			if (input.y >= tileSize * i && input.y < tileSize * i + tileSize) {
-				g.setColor(Color.WHITE);
-				g.setFont(font12);
 				g.drawString("Power", input.x, input.y);
 			}
 			break;
@@ -345,8 +344,7 @@ public class Circuit extends JFrame implements Runnable {
 	private void update() {
 		if (paused) return;
 		updateConnections();
-		ticks++;
-		if (ticks < 12) return;
+		if (ticks++ < 12) return;
 		ticks = 0;
 		resetPower();
 		floodFillGrid();
@@ -640,26 +638,13 @@ public class Circuit extends JFrame implements Runnable {
 			help.hover = true;
 			if (input.leftDown || input.rightDown) {
 				input.releaseAll();
-				JTextArea textArea = new JTextArea(
+				JOptionPane.showMessageDialog(null,
 						"Circuit is a virtual electronic circuit builder/tester made by AJ Weeks in April 2014.\r\n"
 								+ "-Left click to place/roatate objects on the grid.\r\n"
 								+ "-Right click to clear a spot on the grid.\r\n"
 								+ "-Hold down Ctrl while clicking and dragging the mouse to draw.\r\n"
 								+ "-Use the number keys to quickly select different tile types.\r\n"
-								+ "-Hit esc to pause/unpause");
-				textArea.setEditable(false);
-				textArea.setColumns(25);
-				textArea.setRows(60);
-				textArea.setLineWrap(true);
-				textArea.setWrapStyleWord(true);
-				textArea.setFont(new Font("Consolas", Font.BOLD, 16));
-				textArea.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
-				textArea.setBackground(Color.LIGHT_GRAY);
-				JDialog dialog = new JDialog(getOwner(), "Help");
-				dialog.add(textArea);
-				dialog.setSize(580, 300);
-				dialog.setLocationRelativeTo(null);
-				dialog.setVisible(true);
+								+ "-Hit esc to pause/unpause", "Help", JOptionPane.PLAIN_MESSAGE);
 			}
 		} else help.hover = false;
 		
@@ -683,13 +668,14 @@ public class Circuit extends JFrame implements Runnable {
 					selectedTile = y; //Check if the selected tile has a tile to select
 				}
 			} else { //Click in the game board
-				if (saved) saved = false;
-				if (grid.tiles[y * grid.width + x].type != selectionGrid[selectedTile].type) { //If the tile not the selected tile
+				if (grid.tiles[y * grid.width + x].type != selectionGrid[selectedTile].type) { //If the tile clicked is different than selected tile
+					if (saved) saved = false;
 					grid.tiles[y * grid.width + x] = selectionGrid[selectedTile].copy();
 				} else { //The selected tile is the same type as the tile being clicked, so rotate it
 					switch (grid.tiles[y * grid.width + x].type) {
 					case INVERTER:
 						grid.tiles[y * grid.width + x].direction = Tile.rotateCW(grid, x, y);
+						if (saved) saved = false;
 						break;
 					case POWER:
 						grid.tiles[y * grid.width + x].powered = !grid.tiles[y * grid.width + x].powered;
@@ -700,6 +686,8 @@ public class Circuit extends JFrame implements Runnable {
 				}
 			}
 		} else if (input.rightDown && x >= -1 && x < grid.width) { //Right click clears the tile (except in the tile selection area)
+			if (x == -1) return;
+			if (grid.tiles[y * grid.width + x].type == TileType.BLANK) return;
 			if (saved) saved = false;
 			grid.tiles[y * grid.width + x] = Tile.newBlankTile();
 		}

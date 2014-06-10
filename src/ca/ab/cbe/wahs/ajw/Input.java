@@ -124,9 +124,15 @@ public class Input implements MouseMotionListener, MouseListener, KeyListener {
 	
 	public void mouseClicked(MouseEvent e) {}
 	
-	public void mouseEntered(MouseEvent e) {}
+	public void mouseEntered(MouseEvent e) {
+		mouseOnScreen = true;
+	}
 	
-	public void mouseExited(MouseEvent e) {}
+	public boolean mouseOnScreen = false;
+	
+	public void mouseExited(MouseEvent e) {
+		mouseOnScreen = false;
+	}
 	
 	public void mouseReleased(MouseEvent e) {}
 	

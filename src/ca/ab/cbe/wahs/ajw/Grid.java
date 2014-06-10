@@ -19,12 +19,12 @@ public class Grid implements Serializable {
 		}
 	}
 	
-	/** @return New blank board */
+	/** @return A new grid who's tiles all have type <code>BLANK</code> */
 	public static Grid clearBoard(int width, int height) {
 		return new Grid(width, height);
 	}
 	
-	/** @return New blank board */
+	/** @return A new grid who's tiles all have type <code>WIRE</code> */
 	public static Grid allWires(int width, int height) {
 		Grid grid = new Grid(width, height);
 		for (int i = 0; i < grid.tiles.length; i++) {
@@ -34,6 +34,7 @@ public class Grid implements Serializable {
 		return grid;
 	}
 	
+	/** @return <code>true</code> if all tiles have type <code>BLANK</code> */
 	public boolean isEmpty() {
 		for (int i = 0; i < this.width * this.height; i++) {
 			if (this.tiles[i].type != TileType.BLANK) return false;

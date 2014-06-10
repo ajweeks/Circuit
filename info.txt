@@ -6,12 +6,13 @@
    -power: NONE
    -blank: NONE
 -have an alive boolean storing whether or not it is being powered
--have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness), in the order of: { north, east, south, west };
+-have a boolean[] of 4 elements to store which of their neighbors are not blank (for automatic connecting-ness), in the order of: {north, east, south, west};
 -inverter tiles have 4 neighbors, but only "care" about the ones that are in front and behind
 
 --TO DO LIST--
 -Get rid of extra inverter sprites, instead use code to rotate them
 -Fix white box rendering when a save or load window is opened
+-Modify the currently hacky way of getting input
 
 --COMPLETED ITEMS--
 -Fix lingering power which does not go away after the removal of a power source
