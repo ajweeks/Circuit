@@ -149,7 +149,9 @@ public class Circuit extends JFrame implements Runnable {
 		long seconds = 0;
 		while (running) {
 			pollInput();
-			update();
+			for (int i = 0; i < boardSize; i++) {
+				update();
+			}
 			render();
 			try {
 				Thread.sleep(1000 / 60); //60 updates / second (ish)
@@ -344,7 +346,7 @@ public class Circuit extends JFrame implements Runnable {
 	private void update() {
 		if (paused) return;
 		updateConnections();
-		if (ticks++ < 12) return;
+		if (ticks++ < 10) return;
 		ticks = 0;
 		resetPower();
 		floodFillGrid();
