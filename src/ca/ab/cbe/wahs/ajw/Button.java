@@ -40,7 +40,7 @@ public class Button {
 	}
 	
 	public void renderButtonHoverText(String text, Graphics g, int xoff, int yoff, Input input) {
-		if (input.x > this.x && input.x < this.x + this.width && input.y > this.y && input.y < this.y + this.height) {
+		if (this.hover) {
 			g.setColor(Colour.translucentOffWhite);
 			g.drawString(text, this.x + xoff, this.y + yoff);
 		}

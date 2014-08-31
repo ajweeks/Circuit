@@ -243,7 +243,7 @@ public class Circuit extends JFrame implements Runnable {
 		}
 		
 		//Selection tiles numbers
-		for (int y = 0; y < selectionGrid.length + 1; y++) {
+		for (int y = 0; y <= selectionGrid.length; y++) {
 			g.setColor(Colour.translucentGray);
 			g.setFont(font12);
 			g.drawString(Integer.toString(y - 1), 28, y * tileSize - 1);
@@ -262,8 +262,8 @@ public class Circuit extends JFrame implements Runnable {
 			quit.renderButtonHoverText("(crtl-q)", g, 45, 16, input);
 		}
 		
-		if (input.x / tileSize == 0) renderSelectionTileText(g);
-		
+		if (input.x / tileSize == 0) renderSelectionTileText(g); //Mouse is in tile selection column
+			
 		if (!DEBUG && !canvas.hasFocus()) paused = true; //Automatically pause the game if the user has clicked on another window (unless we're debugging)
 			
 		if (DEBUG) {
